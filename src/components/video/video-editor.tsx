@@ -1,9 +1,13 @@
-import { Clapperboard, Pause, Play, Scissors, Trash2, Type, Upload, Download, ImagePlus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Clapperboard, Pause, Play, Scissors, Trash2, Type, Upload, Download, ImagePlus, Undo2, Redo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import { fileKind, FX, planSlideshow, slideshowDuration, type Look, type MediaKind, type Motion, type TextMotion, type TextStyle, type Transition } from "@/lib/video/slideshow";
 import { BEATS, directClips, fitDurations, type BeatId } from "@/lib/video/director";
 import { MUSIC, MUSIC_CATEGORIES, type MusicTrack } from "@/lib/video/music";
+import { EXPORT_SIZES, type ExportFps, type ExportSize } from "@/lib/video/export-presets";
+import { encodeMp4 } from "@/lib/video/mp4-export";
+import { listVideoProjects, loadVideoProject, rewriteClipUrl, saveVideoProject, type VideoProjectRecord } from "@/lib/video/project-db";
 
 type Kind = MediaKind;
 
@@ -64,6 +68,13 @@ export function VideoEditor() {
   const [directorOpen, setDirectorOpen] = useState(false);
   const [filmSeconds, setFilmSeconds] = useState<number | null>(180);
   const [filmMood, setFilmMood] = useState<"warm" | "bold" | "calm">("warm");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"mp4" | "webm">("mp4");
+  const [exportSize, setExportSize] = useState<ExportSize>("1080p");
+  const [exportFps, setExportFps] = useState<ExportFps>(30);
+  const [projects, setProjects] = useState<Pick<VideoProjectRecord, "id" | "name" | "savedAt">[]>([]);
+  const [past, setPast] = useState<Clip[][]>([]);
+  const [future, setFuture] = useState<Clip[][]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioNodes = useRef(new Map<string, { source: MediaElementAudioSourceNode; gain: GainNode }>());
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -107,20 +118,23 @@ export function VideoEditor() {
     return null;
   }
 
-  function draw(at: number) {
-    const canvas = canvasRef.current;
+  function draw(at: number, target?: HTMLCanvasElement) {
+    const canvas = target ?? canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const designW = 1280;
+    const designH = 720;
+    ctx.setTransform(canvas.width / designW, 0, 0, canvas.height / designH, 0, 0);
     ctx.fillStyle = "#14120f";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, designW, designH);
     const list = [...clipsRef.current].sort((a, b) => a.track - b.track);
     for (const clip of list) {
       if (clip.kind === "audio") continue;
       if (at < clip.start || at >= clip.start + clip.duration) continue;
       const local = clip.duration > 0 ? (at - clip.start) / clip.duration : 0;
       const fade = clip.transition === "fade" && local > 0 && local < 1 ? Math.min(1, local / 0.12, (1 - local) / 0.12) : 1;
-      const slide = clip.transition === "slide" && local > 0 && local < 0.22 ? (1 - local / 0.22) * canvas.width * 0.18 : 0;
+      const slide = clip.transition === "slide" && local > 0 && local < 0.22 ? (1 - local / 0.22) * designW * 0.18 : 0;
       ctx.save();
       ctx.globalAlpha = fade;
       ctx.translate(slide, 0);
@@ -132,16 +146,17 @@ export function VideoEditor() {
           img.src = clip.url;
           images.current.set(clip.id, img);
         }
-        if (img.complete && img.naturalWidth) paintPicture(ctx, img, canvas.width, canvas.height, clip, local);
-        if (clip.text) paintText(ctx, clip, canvas.width, canvas.height, local);
+        if (img.complete && img.naturalWidth) paintPicture(ctx, img, designW, designH, clip, local);
+        if (clip.text) paintText(ctx, clip, designW, designH, local);
       }
       if (clip.kind === "video") {
         const video = mediaFor(clip) as HTMLVideoElement | null;
-        if (video && video.readyState >= 2) paintPicture(ctx, video, canvas.width, canvas.height, clip, local, true);
+        if (video && video.readyState >= 2) paintPicture(ctx, video, designW, designH, clip, local, true);
       }
-      if (clip.kind === "text" && clip.text) paintText(ctx, clip, canvas.width, canvas.height, local);
+      if (clip.kind === "text" && clip.text) paintText(ctx, clip, designW, designH, local);
       ctx.restore();
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   function sync(at: number, shouldPlay: boolean) {
@@ -215,6 +230,11 @@ export function VideoEditor() {
         if (playingRef.current) pause();
         else play();
       }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redoEdit();
+        else undoEdit();
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selected) remove(selected);
       }
@@ -243,8 +263,34 @@ export function VideoEditor() {
     draw(timeRef.current);
   }, [clips]);
 
+  function remember() {
+    setPast((cur) => [...cur.slice(-29), clipsRef.current]);
+    setFuture([]);
+  }
+
+  function undoEdit() {
+    setPast((cur) => {
+      const prev = cur[cur.length - 1];
+      if (!prev) return cur;
+      setFuture((next) => [clipsRef.current, ...next]);
+      setClips(prev);
+      return cur.slice(0, -1);
+    });
+  }
+
+  function redoEdit() {
+    setFuture((cur) => {
+      const next = cur[0];
+      if (!next) return cur;
+      setPast((prev) => [...prev.slice(-29), clipsRef.current]);
+      setClips(next);
+      return cur.slice(1);
+    });
+  }
+
   async function addFiles(files: FileList | null) {
     if (!files?.length) return;
+    remember();
     const incoming = Array.from(files);
     const photosNext: PhotoCard[] = [];
     const clipsNext: Clip[] = [];
@@ -309,6 +355,7 @@ export function VideoEditor() {
       toast.error("사진을 먼저 올려 주세요.");
       return;
     }
+    remember();
     const planned = planSlideshow(photos.map((photo) => ({ ...photo, seconds: 4 })));
     setClips(planned);
     setSelected(planned[0]?.id ?? null);
@@ -318,6 +365,7 @@ export function VideoEditor() {
   }
 
   function addMusic(track: MusicTrack) {
+    remember();
     const clip: Clip = {
       id: uid(),
       kind: "audio",
@@ -347,6 +395,7 @@ export function VideoEditor() {
       toast.error("사진을 먼저 올려 주세요.");
       return;
     }
+    remember();
     const timed = fitDurations(photos, filmSeconds);
     setPhotos(timed.map((photo) => ({ id: photo.id, name: photo.name, url: photo.url || "", caption: photo.caption, beat: photo.beat })));
     const clips = directClips(timed, filmSeconds, filmMood);
@@ -377,10 +426,11 @@ export function VideoEditor() {
     setTime(0);
     timeRef.current = 0;
     setDirectorOpen(true);
-    toast.success("스토리 순서와 사진별 길이를 맞춰 영상을 구성했습니다.");
+    toast.success("스토리, 길이, 분위기를 맞춰 두었습니다. 타임라인에서 그대로 고칠 수 있습니다.");
   }
 
   function addText() {
+    remember();
     const clip: Clip = {
       id: uid(),
       kind: "text",
@@ -405,11 +455,13 @@ export function VideoEditor() {
   }
 
   function patch(id: string, partial: Partial<Clip>) {
+    remember();
     setClips((cur) => cur.map((c) => (c.id === id ? { ...c, ...partial } : c)));
     requestAnimationFrame(() => draw(timeRef.current));
   }
 
   function remove(id: string) {
+    remember();
     const clip = clipsRef.current.find((c) => c.id === id);
     if (clip?.url?.startsWith("blob:")) URL.revokeObjectURL(clip.url);
     videos.current.get(id)?.pause();
@@ -426,6 +478,7 @@ export function VideoEditor() {
     const clip = clipsRef.current.find((c) => c.id === selected);
     const at = timeRef.current;
     if (!clip || at <= clip.start + 0.1 || at >= clip.start + clip.duration - 0.1) return;
+    remember();
     const left = at - clip.start;
     const right: Clip = { ...clip, id: uid(), name: `${clip.name} 2`, start: at, duration: clip.duration - left, offset: clip.offset + left };
     setClips((cur) => cur.flatMap((c) => (c.id === clip.id ? [{ ...c, duration: left }, right] : [c])));
@@ -442,6 +495,129 @@ export function VideoEditor() {
     if (slideshowDuration(clips) < 4) notes.push("영상이 너무 짧습니다.");
     if (!notes.length) toast.success("납품 전 확인을 통과했습니다.");
     else toast.message(notes.join(" "));
+  }
+
+  async function saveCut() {
+    try {
+      const photoIds = new Map<string, string>();
+      const photosStored = [];
+      for (const photo of photos) {
+        const buffer = await (await fetch(photo.url)).arrayBuffer();
+        photosStored.push({ id: photo.id, name: photo.name, caption: photo.caption, beat: photo.beat, type: "image/jpeg", buffer });
+        photoIds.set(photo.url, `photo:${photo.id}`);
+      }
+      const fileIds = new Map<string, string>();
+      const files: VideoProjectRecord["files"] = [];
+      for (const clip of clipsRef.current) {
+        if (!clip.url?.startsWith("blob:") || photoIds.has(clip.url) || fileIds.has(clip.url)) continue;
+        const buffer = await (await fetch(clip.url)).arrayBuffer();
+        files.push({ key: clip.id, type: clip.kind === "audio" ? "audio/mpeg" : "video/mp4", buffer });
+        fileIds.set(clip.url, `file:${clip.id}`);
+      }
+      const record: VideoProjectRecord = {
+        id: uid(),
+        name: `영상 ${new Date().toLocaleString("ko-KR")}`,
+        savedAt: Date.now(),
+        photos: photosStored,
+        files,
+        clips: clipsRef.current.map((clip) => ({ ...clip, url: rewriteClipUrl(clip.url, photoIds, fileIds) })),
+      };
+      await saveVideoProject(record);
+      setProjects(await listVideoProjects());
+      toast.success("이 브라우저에 영상 버전을 저장했습니다. 새로고침 후에도 불러올 수 있습니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "영상 저장에 실패했습니다.");
+    }
+  }
+
+  async function openCut(id: string) {
+    const row = await loadVideoProject(id);
+    if (!row) return;
+    remember();
+    const urls = new Map<string, string>();
+    const nextPhotos = row.photos.map((photo) => {
+      const url = URL.createObjectURL(new Blob([photo.buffer], { type: photo.type || "image/jpeg" }));
+      urls.set(`photo:${photo.id}`, url);
+      return { id: photo.id, name: photo.name, url, caption: photo.caption, beat: photo.beat as BeatId | undefined };
+    });
+    for (const file of row.files) {
+      urls.set(`file:${file.key}`, URL.createObjectURL(new Blob([file.buffer], { type: file.type })));
+    }
+    const nextClips = (row.clips as Clip[]).map((clip) => ({
+      ...clip,
+      url: clip.url && urls.has(clip.url) ? urls.get(clip.url) : clip.url,
+    }));
+    setPhotos(nextPhotos);
+    setClips(nextClips);
+    setTime(0);
+    timeRef.current = 0;
+    toast.success("저장한 영상을 불러왔습니다.");
+  }
+
+  async function renderStill(canvas: HTMLCanvasElement, at: number) {
+    for (const clip of clipsRef.current) {
+      if (clip.kind !== "video" || !clip.url) continue;
+      if (at < clip.start || at >= clip.start + clip.duration) continue;
+      const el = mediaFor(clip) as HTMLVideoElement | null;
+      if (!el) continue;
+      const mediaDur = el.duration;
+      let local = clip.offset + Math.max(0, at - clip.start);
+      if (clip.loop && Number.isFinite(mediaDur) && mediaDur > 0) local %= mediaDur;
+      if (Math.abs(el.currentTime - local) > 0.05) {
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            el.removeEventListener("seeked", done);
+            resolve();
+          };
+          el.addEventListener("seeked", done);
+          try { el.currentTime = local; } catch { resolve(); }
+          window.setTimeout(resolve, 500);
+        });
+      }
+    }
+    draw(at, canvas);
+  }
+
+  async function exportMp4() {
+    if (exporting || clips.length === 0) return;
+    pause();
+    setExporting(true);
+    const size = EXPORT_SIZES[exportSize];
+    const end = Math.max(0.4, slideshowDuration(clipsRef.current));
+    try {
+      const result = await encodeMp4({
+        width: size.width,
+        height: size.height,
+        fps: exportFps,
+        duration: end,
+        render: renderStill,
+        audio: clipsRef.current
+          .filter((clip) => (clip.kind === "audio" || clip.kind === "video") && clip.url && clip.volume > 0)
+          .map((clip) => ({
+            url: clip.url!,
+            start: clip.start,
+            duration: clip.duration,
+            offset: clip.offset,
+            volume: clip.volume,
+            loop: clip.loop,
+          })),
+        onProgress: (ratio) => {
+          if (Math.round(ratio * 10) !== Math.round((ratio - 0.02) * 10)) {
+            toast.message(`MP4 만드는 중 ${Math.round(ratio * 100)}%`, { id: "mp4" });
+          }
+        },
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(result.blob);
+      a.download = `adsmile-${exportSize}-${exportFps}fps.mp4`;
+      a.click();
+      toast.success(result.audio ? `H.264 MP4 ${exportSize} ${exportFps}fps 파일을 받았습니다.` : `H.264 MP4 ${exportSize}를 받았습니다. 넣을 소리가 없어 영상만 담았습니다.`);
+      setExportOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "MP4를 만들지 못했습니다.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function exportVideo() {
@@ -508,6 +684,7 @@ export function VideoEditor() {
             <p className="text-sm font-bold leading-none">영상편집실</p>
             <p className="mt-1 text-[10px] text-white/50">사진과 자막을 넣으면 영상이 만들어집니다</p>
           </div>
+          <Link to="/studio" className="text-[11px] font-bold text-white/70">편집실</Link>
         </div>
         <label className="relative inline-flex h-8 cursor-pointer items-center gap-1 overflow-hidden rounded-md bg-[#f08c00] px-3 text-[12px] font-bold text-[#1c150e]">
           <Upload className="size-3.5" /> 사진 올리기
@@ -523,8 +700,10 @@ export function VideoEditor() {
           <ImagePlus className="size-3.5" /> 영상 만들기
         </button>
         <button type="button" onClick={() => { setDirectorOpen(true); if (photos.length) runDirector(); }} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#fffaf3] px-3 text-[12px] font-bold text-[#1c150e]">
-          AI 영상감독
+          감독에게 맡기기
         </button>
+        <Tool onClick={undoEdit}><Undo2 className="size-3.5" /> 취소</Tool>
+        <Tool onClick={redoEdit}><Redo2 className="size-3.5" /> 다시</Tool>
         <Tool onClick={addText}><Type className="size-3.5" /> 글자</Tool>
         <Tool onClick={split}><Scissors className="size-3.5" /> 분할</Tool>
         <Tool onClick={() => selected && remove(selected)}><Trash2 className="size-3.5" /> 삭제</Tool>
@@ -534,10 +713,42 @@ export function VideoEditor() {
         </button>
         <span className="ml-1 font-mono text-[12px] text-white/70">{fmt(time)} / {fmt(duration)}</span>
         <button type="button" onClick={deliveryCheck} className="inline-flex h-8 items-center rounded-md border border-white/15 px-2.5 text-[12px] font-bold">납품 점검</button>
-        <button type="button" disabled={exporting || clips.length === 0} onClick={() => void exportVideo()} className="ml-auto inline-flex h-8 items-center gap-1 rounded-md border border-white/15 px-3 text-[12px] font-bold disabled:opacity-40">
+        <button type="button" onClick={() => void saveCut()} className="inline-flex h-8 items-center rounded-md border border-white/15 px-2.5 text-[12px] font-bold">버전 저장</button>
+        <button type="button" onClick={() => void listVideoProjects().then(setProjects)} className="inline-flex h-8 items-center rounded-md border border-white/15 px-2.5 text-[12px] font-bold">불러오기</button>
+        <button type="button" disabled={exporting || clips.length === 0} onClick={() => setExportOpen((open) => !open)} className="ml-auto inline-flex h-8 items-center gap-1 rounded-md border border-white/15 px-3 text-[12px] font-bold disabled:opacity-40">
           <Download className="size-3.5" /> {exporting ? "내보내는 중…" : "영상 받기"}
         </button>
       </header>
+      {exportOpen ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#2a2118] px-3 py-2 text-[12px]">
+          <span className="font-bold text-white/60">형식</span>
+          {(["mp4", "webm"] as const).map((format) => (
+            <button key={format} type="button" onClick={() => setExportFormat(format)} className={`rounded-full px-2 py-1 font-bold ${exportFormat === format ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>{format.toUpperCase()}</button>
+          ))}
+          {exportFormat === "mp4" ? (
+            <>
+              <span className="ml-2 font-bold text-white/60">화질</span>
+              {(Object.keys(EXPORT_SIZES) as ExportSize[]).map((size) => (
+                <button key={size} type="button" onClick={() => setExportSize(size)} className={`rounded-full px-2 py-1 font-bold ${exportSize === size ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>{size}</button>
+              ))}
+              <span className="ml-2 font-bold text-white/60">프레임</span>
+              {([30, 60] as const).map((fps) => (
+                <button key={fps} type="button" onClick={() => setExportFps(fps)} className={`rounded-full px-2 py-1 font-bold ${exportFps === fps ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>{fps}fps</button>
+              ))}
+            </>
+          ) : <span className="text-white/50">기존 WEBM은 미리보기 크기 그대로 받습니다.</span>}
+          <button type="button" disabled={exporting} onClick={() => void (exportFormat === "mp4" ? exportMp4() : exportVideo())} className="rounded-md bg-white px-3 py-1 font-bold text-[#1c150e] disabled:opacity-40">
+            {exportFormat === "mp4" ? "H.264 MP4 받기" : "WEBM 받기"}
+          </button>
+        </div>
+      ) : null}
+      {projects.length ? (
+        <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-3 py-2 text-[12px]">
+          {projects.map((project) => (
+            <button key={project.id} type="button" onClick={() => void openCut(project.id)} className="shrink-0 rounded-md bg-white/10 px-2 py-1 font-bold">{project.name}</button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-3 py-2">
         {photos.length === 0 ? (

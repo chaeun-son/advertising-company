@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { inspectDraft } from "@/lib/studio/compose";
 import { downloadBlob, downloadText, draftToPngBlob, draftToSvgStandalone, fileStem } from "@/lib/studio/svg";
 import { useStudio } from "@/lib/studio/store";
@@ -13,6 +14,7 @@ import { EditPanel } from "./edit-panel";
 import { DraftCanvas } from "./draft-canvas";
 import { planAiDirections, renderAiImage } from "@/lib/ai/generate";
 import { sizeOf } from "@/lib/studio/catalog";
+import { reviewDraft } from "@/lib/studio/production-check";
 import { PDFDocument } from "pdf-lib";
 
 
@@ -164,6 +166,7 @@ export function Workbench() {
           ].map(({i:Icon,l,a}) => <button key={l} onClick={a} className={`editor-top-tool ${useStudio.getState().tool==="select"&&l==="선택"?"is-active":""}`}><Icon className="size-4"/><span>{l}</span></button>)}
         </div>
         <div className="ml-auto flex items-center gap-1.5">
+          <Link to="/video" className="hidden h-8 items-center rounded-md border border-border px-2 text-[11px] font-bold lg:inline-flex">영상편집실</Link>
           <button disabled={!history.length} onClick={undo} className="icon-btn"><Undo2 className="size-4"/></button>
           <button disabled={!future.length} onClick={redo} className="icon-btn"><Redo2 className="size-4"/></button>
           <div className="zoom-pill"><button onClick={() => setZoom(zoom/1.15)}><Minus className="size-3.5"/></button><b>{Math.round(zoom*100)}%</b><button onClick={() => setZoom(zoom*1.15)}><Plus className="size-3.5"/></button></div>
@@ -229,7 +232,12 @@ export function Workbench() {
               <button disabled={Boolean(busy)} onClick={() => {
                 if (!brief.headline.trim() && !brief.notes.trim()) { toast.error("주문내용을 먼저 입력해 주세요."); return; }
                 useStudio.getState().handToDesigner();
-                toast.success("A 고급, B 강렬, C 감성 시안을 만들었습니다. 실행 취소로 이전 시안을 되돌릴 수 있습니다.");
+                const state = useStudio.getState();
+                const draft = state.drafts.find((item) => item.id === state.activeId) ?? state.drafts[0];
+                const notes = draft ? reviewDraft(draft, state.brief).filter((row) => !row.ok).slice(0, 2) : [];
+                toast.success(notes.length
+                  ? `편집 가능한 시안 3종을 만들었습니다. ${notes.map((row) => row.text).join(" ")}`
+                  : "A 고급, B 강렬, C 감성 시안을 만들었습니다. 캔버스에서 바로 고칠 수 있습니다.");
               }} className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1c150e] text-sm font-black text-white">✨ 디자이너에게 맡기기</button>
               <button disabled={Boolean(busy)} onClick={generateDesigns} className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#5b3df5] to-[#8b5cf6] text-xs font-black text-white disabled:opacity-50"><Sparkles className="size-4"/>{busy || (aiAvailable ? "AI 디자인 생성하기" : "편집 시안 3종 만들기")}</button>
             </div>
