@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="450" viewBox="0 0 1800 450" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="44_crane_sky-title"><title id="44_crane_sky-title">학의 하늘</title><desc>Original editable vector banner background. No raster images or fonts. 4:1 aspect ratio. Empty center for type.</desc><defs><linearGradient id="44_crane_sky-g" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c5dde8"/><stop offset="50%" stop-color="#eaf3f8"/><stop offset="100%" stop-color="#9ec2d4"/></linearGradient><clipPath id="44_crane_sky-c"><rect width="1800" height="450"/></clipPath></defs><g clip-path="url(#44_crane_sky-c)"><rect width="1800" height="450" fill="#eaf3f8"/><rect width="1800" height="450" fill="url(#44_crane_sky-g)"/>
+     <ellipse cx="120" cy="80" rx="180" ry="90" fill="#fff" opacity=".35"/>
+     <ellipse cx="80" cy="380" rx="220" ry="80" fill="#fff" opacity=".25"/>
+     <ellipse cx="1680" cy="70" rx="200" ry="100" fill="#fff" opacity=".3"/>
+     <ellipse cx="1720" cy="400" rx="180" ry="70" fill="#fff" opacity=".22"/></g></svg>

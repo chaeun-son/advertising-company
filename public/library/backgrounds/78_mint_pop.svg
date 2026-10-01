@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="450" viewBox="0 0 1800 450" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="78_mint_pop-title"><title id="78_mint_pop-title">민트 팝</title><desc>Original editable vector banner background. No raster images or fonts. 4:1 aspect ratio. Empty center for type.</desc><defs><clipPath id="78_mint_pop-c"><rect width="1800" height="450"/></clipPath></defs><g clip-path="url(#78_mint_pop-c)"><rect width="1800" height="450" fill="#eefaf4"/>
+    <circle cx="80" cy="30" r="150" fill="#5ee0c0"/>
+    <circle cx="260" cy="380" r="85" fill="#f7d36a"/>
+    <path d="M-10 200 l65 -60 l65 60 l65 -60 l65 60" fill="none" stroke="#3a8f88" stroke-width="16"/>
+    <polygon points="260,60 355,70 298,148" fill="#ff8fab"/>
+    <circle cx="68" cy="373" r="35" fill="none" stroke="#2f5d58" stroke-width="2" opacity=".65"/>
+    <circle cx="68" cy="373" r="48" fill="none" stroke="#2f5d58" stroke-width="2" opacity=".5"/>
+    <rect x="280" y="250" width="7" height="60" fill="#7ad7c8" transform="rotate(35 280 250)"/>
+    <rect x="300" y="258" width="7" height="60" fill="#7ad7c8" transform="rotate(35 300 258)"/>
+    <rect x="320" y="266" width="7" height="60" fill="#7ad7c8" transform="rotate(35 320 266)"/><g transform="translate(1800 450) rotate(180)">
+    <circle cx="80" cy="30" r="150" fill="#5ee0c0"/>
+    <circle cx="260" cy="380" r="85" fill="#f7d36a"/>
+    <path d="M-10 200 l65 -60 l65 60 l65 -60 l65 60" fill="none" stroke="#3a8f88" stroke-width="16"/>
+    <polygon points="260,60 355,70 298,148" fill="#ff8fab"/>
+    <circle cx="68" cy="373" r="35" fill="none" stroke="#2f5d58" stroke-width="2" opacity=".65"/>
+    <circle cx="68" cy="373" r="48" fill="none" stroke="#2f5d58" stroke-width="2" opacity=".5"/>
+    <rect x="280" y="250" width="7" height="60" fill="#7ad7c8" transform="rotate(35 280 250)"/>
+    <rect x="300" y="258" width="7" height="60" fill="#7ad7c8" transform="rotate(35 300 258)"/>
+    <rect x="320" y="266" width="7" height="60" fill="#7ad7c8" transform="rotate(35 320 266)"/></g></g></svg>

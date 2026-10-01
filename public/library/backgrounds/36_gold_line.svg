@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="450" viewBox="0 0 1800 450" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="36_gold_line-title"><title id="36_gold_line-title">골드 라인</title><desc>Original editable vector banner background. No raster images or fonts. 4:1 aspect ratio. Empty center for type.</desc><defs><clipPath id="36_gold_line-c"><rect width="1800" height="450"/></clipPath></defs><g clip-path="url(#36_gold_line-c)"><rect width="1800" height="450" fill="#fbf7ee"/><path d="M40 70 V30 H110 M40 380 V420 H110" fill="none" stroke="#c4a15a" stroke-width="4"/>
+    <rect x="20" y="20" width="18" height="18" fill="#e6c98a"/>
+    <rect x="20" y="412" width="18" height="18" fill="#a07d36"/>
+    <line x1="160" y1="40" x2="160" y2="410" stroke="#d6b46e" stroke-width="1" stroke-dasharray="6 8" opacity=".5"/><g transform="translate(1800 0) scale(-1 1)"><path d="M40 70 V30 H110 M40 380 V420 H110" fill="none" stroke="#c4a15a" stroke-width="4"/>
+    <rect x="20" y="20" width="18" height="18" fill="#e6c98a"/>
+    <rect x="20" y="412" width="18" height="18" fill="#a07d36"/>
+    <line x1="160" y1="40" x2="160" y2="410" stroke="#d6b46e" stroke-width="1" stroke-dasharray="6 8" opacity=".5"/></g></g></svg>

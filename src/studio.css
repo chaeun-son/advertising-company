@@ -1,0 +1,159 @@
+.adsmile-studio {
+  --muted-foreground: #6e6256;
+  --workbench: #f3eadc;
+  --foreground: #1c150e;
+  --border: #ead9c4;
+  --primary: #f08c00;
+  --safe: #2c6a4a;
+  --bleed: #c4452d;
+  background: #f6efe4;
+  color: #1c150e;
+  font-family: "IBM Plex Sans KR", "Noto Sans KR", sans-serif;
+}
+.adsmile-studio .reference-header {
+  background: #fffaf3;
+  border-bottom: 1px solid #ead9c4;
+  box-shadow: none;
+}
+.adsmile-studio .reference-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #1c150e;
+  color: #f6efe4;
+  font-size: 13px;
+  text-shadow: none;
+  font-weight: 700;
+}
+.adsmile-studio .download-btn {
+  background: #1c150e;
+  box-shadow: none;
+}
+.adsmile-studio .studio-side-panel,
+.adsmile-studio .studio-properties {
+  background: #fffaf3;
+}
+
+.panel-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.workbench-grid {
+  background-color: var(--workbench);
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: 120% 0; }
+  100% { background-position: -20% 0; }
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in oklab, var(--foreground) 10%, transparent) 50%,
+    transparent 80%
+  );
+  background-size: 220% 100%;
+  animation: shimmer-sweep 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-shimmer {
+    animation: none;
+  }
+}
+
+/* v7 premium workspace pass — keeps the editor logic, upgrades the visual system. */
+:root {
+  --background: #f5f6fb;
+  --foreground: #172033;
+  --panel: #ffffff;
+  --card: #ffffff;
+  --muted: #f0efff;
+  --muted-foreground: #667085;
+  --primary: #c46e00;
+  --primary-foreground: #ffffff;
+  --border: #e4e7ec;
+  --workbench: #eef1f6;
+  --bleed: #d92d20;
+  --safe: #079455;
+  --ring: #7257ff;
+  --ai: #c46e00;
+  --ai-foreground: #ffffff;
+}
+
+.dark {
+  --background: #11131a;
+  --foreground: #f1f3f9;
+  --panel: #181b24;
+  --card: #202430;
+  --muted: #29263d;
+  --muted-foreground: #a7afbf;
+  --primary: #8b78ff;
+  --primary-foreground: #ffffff;
+  --border: #303646;
+  --workbench: #0e1016;
+  --ring: #9d8dff;
+  --ai: #9a7cff;
+  --ai-foreground: #ffffff;
+}
+
+.studio-side-panel, .studio-properties { box-shadow: 0 0 18px rgb(16 24 40 / 0.035); z-index: 10; }
+.workbench-grid {
+  background-color: var(--workbench);
+  background-image: radial-gradient(color-mix(in oklab, var(--foreground) 10%, transparent) 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+}
+
+/* v7 pass5 — full professional editor shell */
+.editor-top-tool{height:36px;display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:0 10px;font-size:11px;font-weight:700;color:#475467}.editor-top-tool:hover{background:#fff4e3;color:#c46e00}.icon-btn{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:9px;background:#fff}.icon-btn:disabled{opacity:.35}.zoom-pill{height:34px;display:flex;align-items:center;border:1px solid var(--border);border-radius:9px;background:#fff;overflow:hidden}.zoom-pill button{width:30px;height:100%;display:grid;place-items:center}.zoom-pill b{min-width:46px;text-align:center;font-size:11px}.top-action{height:34px;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:9px;padding:0 10px;background:#fff;font-size:11px;font-weight:800}.top-action.is-on{border-color:#a7f3d0;color:#079455;background:#ecfdf3}.download-btn{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:9px;padding:0 13px;background:linear-gradient(135deg,#c46e00,#e09a2e);color:#fff;font-size:11px;font-weight:900;box-shadow:0 6px 16px rgba(196,110,0,.22)}
+.side-tool{width:100%;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:9px;font-weight:800;color:#667085;border-left:3px solid transparent}.side-tool:hover,.side-tool.active{color:#c46e00;background:#fff6ea;border-left-color:#c46e00}.template-search{height:34px;display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:9px;padding:0 9px;color:#98a2b3}.template-search input{min-width:0;width:100%;font-size:11px;outline:none}.chip{height:27px;border:1px solid var(--border);border-radius:999px;padding:0 9px;background:#fff;font-size:10px;font-weight:700;color:#667085}.chip.on{background:#c46e00;color:#fff;border-color:#c46e00}.template-card{position:relative;width:100%;height:78px;overflow:hidden;border:1px solid #e8eaf0;border-radius:10px;padding:13px 10px 10px 15px;text-align:left;box-shadow:0 2px 8px rgba(16,24,40,.04)}.template-card b{position:relative;z-index:2;display:block;font-size:11px;color:#6b4a28}.template-card span{position:relative;z-index:2;display:block;margin-top:3px;font-size:9px;color:#667085}.template-card small{position:absolute;right:8px;bottom:6px;font-size:8px;color:#98a2b3}.template-flower{position:absolute;right:10px;top:6px;font-size:35px;color:#f49ab4;opacity:.65}.ai-dock{min-height:220px;max-height:250px}.draft-card{min-width:0;text-align:left}.draft-thumb{height:72px;border:1px solid #e4e7ec;border-radius:9px;padding:12px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}.draft-thumb span{font-size:8px;font-weight:700}.draft-thumb b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.draft-thumb.v1{background:linear-gradient(135deg,#fff3f6,#fff 55%,#eaf7ff);color:#17427d}.draft-thumb.v2{background:linear-gradient(135deg,#eefbf2,#fff8e9);color:#1d5130}.draft-thumb.v3{background:linear-gradient(135deg,#6b4a28,#c46e00);color:#fff}.draft-card>span{display:block;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;color:#667085}.draft-card strong{display:block;margin-top:4px;border-radius:6px;background:#fff4e3;padding:4px;text-align:center;font-size:9px;color:#c46e00}.draft-card.selected .draft-thumb{outline:2px solid #c46e00;outline-offset:1px}.studio-properties{width:340px!important}.workbench-grid{background-color:#f6efe4;background-image:radial-gradient(#e2d2bc .7px,transparent .7px);background-size:18px 18px}
+
+/* Reference-inspired print studio workspace */
+.reference-header{min-height:58px;background:#fff;gap:18px;box-shadow:0 1px 5px #0f246110}
+.reference-mark{display:grid;place-items:center;width:25px;height:25px;font-size:24px;line-height:1;color:#c46e00;text-shadow:3px 2px #ee6b9c,-3px -2px #6bb6ed}
+.reference-header-tag{margin-left:6px;font-size:10px;font-weight:500;color:#65728b;white-space:nowrap}
+.reference-document-title{margin:auto;max-width:235px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:8px 13px;border:1px solid #e8ebf1;border-radius:7px;color:#242e42;font-size:11px;font-weight:700}
+.reference-header nav{order:4;margin-left:10px}
+.reference-header nav button{border-radius:8px;font-size:11px;padding:5px 10px}
+.reference-header .ml-auto{margin-left:auto}
+.reference-toolbar{background:#fff;min-height:62px}
+.reference-toolbar .editor-top-tool{height:49px;min-width:49px;padding:4px 7px;display:flex;flex-direction:column;justify-content:center;gap:3px;font-size:9px;color:#303c54}
+.reference-toolbar .editor-top-tool.is-active{color:#c46e00;background:#fff4e3}
+.reference-toolbar .icon-btn,.reference-toolbar .top-action,.reference-toolbar .zoom-pill{border-color:#e9ebf2;box-shadow:0 1px 3px #19245009}
+.reference-library{background:#fff}
+.reference-library .side-tool{height:63px;font-size:10px}
+.reference-library .template-search{height:39px;background:#fbfcff;border-radius:9px}
+.reference-library .category-tile{height:34px;text-align:left;padding:0 8px;border:1px solid #e8ebf2;background:#fafbfe;border-radius:7px;white-space:nowrap}
+.reference-library .category-tile:hover{background:#fff1dc;color:#c46e00}
+.reference-template-card img{display:block;width:100%;height:64px;object-fit:cover;border:1px solid #e6e8ed;border-radius:6px}
+.reference-template-card strong{display:block;padding-top:5px;color:#34405d;font-size:10px}
+.reference-template-card:hover img{outline:2px solid #e09a2e;outline-offset:1px}
+.reference-stage{background-color:#f3eadc!important;background-image:none!important}
+.reference-ruler-top{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:2;color:#344054;font-size:10px;white-space:nowrap}
+.reference-ruler-side{position:absolute;top:50%;left:9px;z-index:2;color:#344054;font-size:10px}
+.reference-ai-dock{min-height:255px;max-height:290px;background:#fff}
+.reference-ai-dock>div:first-child{background:linear-gradient(130deg,#fff,#fffaf3)}
+.reference-ai-dock>div:nth-child(2){background:#fffaf3;overflow-y:auto}
+.reference-draft-row{display:grid;grid-template-columns:46% 1fr auto;align-items:center;width:100%;gap:7px;min-height:61px;padding:5px;border:1px solid #ead9c4;border-radius:8px;background:#fff}
+.reference-draft-row .draft-thumb{height:49px;padding:0;border-radius:5px}
+.reference-draft-row>span{white-space:normal;text-align:left;font-size:10px;margin:0}
+.reference-draft-row strong{font-size:9px;white-space:nowrap;padding:4px 5px}
+.reference-draft-row.selected{border-color:#c46e00;box-shadow:0 0 0 1px #c46e00}
+.reference-panel-tabs{height:43px;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;border-bottom:1px solid #e6e9f0}
+.reference-panel-tabs button{font-size:12px;color:#69738b;font-weight:700}
+.reference-panel-tabs button.active{color:#a85e00;border-bottom:2px solid #c46e00}
+.studio-properties{width:292px!important}
+.studio-properties ul button{height:31px;border-radius:5px;border-color:#eef0f4}
+.studio-properties .panel-label{letter-spacing:0;font-size:11px;color:#35405b}
+@media (max-width:1450px){.reference-header-tag,.reference-document-title{display:none}.reference-toolbar .editor-top-tool{min-width:38px}.reference-library{width:290px!important}.studio-properties{width:265px!important}}
+@media (max-width:1200px){.reference-toolbar .editor-top-tool span{display:none}.reference-toolbar .editor-top-tool{min-width:28px;height:35px}.reference-toolbar{min-height:50px}}

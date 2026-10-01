@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e7f8ef"/>
+      <stop offset="0.5" stop-color="#f7fffb"/>
+      <stop offset="1" stop-color="#e5f6ff"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2ec4b6"/>
+      <stop offset="1" stop-color="#7ed9a4"/>
+    </linearGradient>
+    <linearGradient id="lime" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#b6e36a"/>
+      <stop offset="1" stop-color="#7dce57"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5eb0f0"/>
+      <stop offset="1" stop-color="#2f7ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="1000" fill="url(#sky)"/>
+  <path d="M0 80C140 40 190 220 120 380C50 540 20 700 80 860C120 960 40 1000 0 1000V80Z" fill="url(#teal)"/>
+  <path d="M0 180C180 140 230 340 150 520C80 680 30 800 0 900V180Z" fill="url(#lime)" opacity="0.92"/>
+  <path d="M0 300C130 270 180 460 100 640C40 760 10 860 0 940V300Z" fill="url(#blue)" opacity="0.9"/>
+  <path d="M1000 80C860 40 810 220 880 380C950 540 980 700 920 860C880 960 960 1000 1000 1000V80Z" fill="url(#teal)"/>
+  <path d="M1000 180C820 140 770 340 850 520C920 680 970 800 1000 900V180Z" fill="url(#lime)" opacity="0.92"/>
+  <path d="M1000 300C870 270 820 460 900 640C960 760 990 860 1000 940V300Z" fill="url(#blue)" opacity="0.9"/>
+</svg>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="450" viewBox="0 0 1800 450" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="49_eave_shadow-title"><title id="49_eave_shadow-title">처마 그림자</title><desc>Original editable vector banner background. No raster images or fonts. 4:1 aspect ratio. Empty center for type.</desc><defs><clipPath id="49_eave_shadow-c"><rect width="1800" height="450"/></clipPath></defs><g clip-path="url(#49_eave_shadow-c)"><rect width="1800" height="450" fill="#f4f1e8"/>
+    <path d="M-50 145 Q160 145 305 44 Q283 98 408 147 L362 172 H-50Z" fill="#4a585c"/>
+    <path d="M-50 155 Q160 154 305 60 Q301 115 402 148" fill="none" stroke="#9aa6a6" stroke-width="4"/>
+    <rect x="40" y="178" width="24" height="245" fill="#8c7761"/>
+    <rect x="254" y="178" width="24" height="245" fill="#8c7761"/>
+    <line x1="0" y1="185" x2="325" y2="185" stroke="#806953" stroke-width="15"/><g transform="translate(1800 0) scale(-1 1)">
+    <path d="M-50 145 Q160 145 305 44 Q283 98 408 147 L362 172 H-50Z" fill="#4a585c"/>
+    <path d="M-50 155 Q160 154 305 60 Q301 115 402 148" fill="none" stroke="#9aa6a6" stroke-width="4"/>
+    <rect x="40" y="178" width="24" height="245" fill="#8c7761"/>
+    <rect x="254" y="178" width="24" height="245" fill="#8c7761"/>
+    <line x1="0" y1="185" x2="325" y2="185" stroke="#806953" stroke-width="15"/></g><path d="M390 450 Q600 390 790 440 T1350 450Z" fill="#dfe2d4"/></g></svg>

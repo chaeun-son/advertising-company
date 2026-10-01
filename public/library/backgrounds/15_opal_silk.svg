@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="450" viewBox="0 0 1800 450" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="15_opal_silk-title"><title id="15_opal_silk-title">오팔 실크</title><desc>Original editable vector banner background. No raster images or fonts. 4:1 aspect ratio. Empty center for type.</desc><defs><linearGradient id="15_opal_silk-g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#c4f1f3"/><stop offset="35%" stop-color="#dbd5fb"/><stop offset="70%" stop-color="#f6d5eb"/><stop offset="100%" stop-color="#fff3cd"/>
+  </linearGradient>
+  <radialGradient id="15_opal_silk-r" cx="32%" cy="25%" r="76%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#aecde5"/></radialGradient><clipPath id="15_opal_silk-c"><rect width="1800" height="450"/></clipPath></defs><g clip-path="url(#15_opal_silk-c)"><rect width="1800" height="450" fill="#f4f7ff"/>
+    <path d="M-100 80 C140 -60 180 300 420 420 L-100 500Z" fill="url(#15_opal_silk-g)"/>
+    <path d="M-100 130 C140 -60 180 330 420 455 L-100 500Z" fill="url(#15_opal_silk-g)" opacity=".7"/>
+    <path d="M-100 180 C140 -60 180 360 420 490 L-100 500Z" fill="url(#15_opal_silk-g)" opacity=".5"/>
+    <circle cx="260" cy="96" r="60" fill="url(#15_opal_silk-r)"/>
+    <circle cx="1620" cy="100" r="145" fill="none" stroke="#fff" stroke-width="2" opacity=".55"/>
+    <circle cx="1620" cy="100" r="160" fill="none" stroke="#fff" stroke-width="2" opacity=".4"/><g transform="translate(1800 450) rotate(180)">
+    <path d="M-100 80 C140 -60 180 300 420 420 L-100 500Z" fill="url(#15_opal_silk-g)"/>
+    <path d="M-100 130 C140 -60 180 330 420 455 L-100 500Z" fill="url(#15_opal_silk-g)" opacity=".7"/>
+    <path d="M-100 180 C140 -60 180 360 420 490 L-100 500Z" fill="url(#15_opal_silk-g)" opacity=".5"/>
+    <circle cx="260" cy="96" r="60" fill="url(#15_opal_silk-r)"/>
+    <circle cx="1620" cy="100" r="145" fill="none" stroke="#fff" stroke-width="2" opacity=".55"/>
+    <circle cx="1620" cy="100" r="160" fill="none" stroke="#fff" stroke-width="2" opacity=".4"/></g></g></svg>
