@@ -1,8 +1,9 @@
 export type Look = "none" | "warm" | "cool" | "mono" | "vintage" | "vivid";
-export type Motion = "none" | "zoom-in" | "zoom-out" | "pan-left" | "pan-right";
-export type Transition = "none" | "fade" | "slide";
+export type Motion = "none" | "zoom-in" | "zoom-out" | "pan-left" | "pan-right" | "slow-zoom" | "face-focus";
+export type Transition = "none" | "fade" | "slide" | "black";
 export type TextMotion = "none" | "fade" | "pop" | "rise" | "type";
-export type TextStyle = "bar" | "outline" | "shadow" | "plain";
+export type TextStyle = "bar" | "outline" | "shadow" | "plain" | "body" | "year" | "ending";
+export type FrameMode = "blur" | "contain" | "cover";
 
 export const FX = {
   look: "none" as Look,
@@ -55,6 +56,7 @@ export type PlannedClip = {
   transition: Transition;
   textMotion: TextMotion;
   textStyle: TextStyle;
+  frame?: FrameMode;
 };
 
 /** 사진마다 화면을 채우고, 자막이 있으면 같은 시간에 아래에 올린다. */
@@ -79,10 +81,11 @@ export function planSlideshow(slides: SlideInput[], seconds = 4): PlannedClip[] 
       y: 0.86,
       volume: 0,
       look: "none",
-      motion: "zoom-in",
-      transition: index === 0 ? "fade" : "slide",
+      motion: "slow-zoom",
+      transition: index === 0 ? "fade" : "fade",
       textMotion: "none",
       textStyle: "plain",
+      frame: "blur",
     });
     const caption = slide.caption.trim();
     if (caption) {

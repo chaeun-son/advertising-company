@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Clapperboard, Pause, Play, Scissors, Trash2, Type, Upload, Download, ImagePlus, Undo2, Redo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { toast } from "sonner";
-import { fileKind, FX, planSlideshow, slideshowDuration, type Look, type MediaKind, type Motion, type TextMotion, type TextStyle, type Transition } from "@/lib/video/slideshow";
+import { fileKind, FX, planSlideshow, slideshowDuration, type FrameMode, type Look, type MediaKind, type Motion, type TextMotion, type TextStyle, type Transition } from "@/lib/video/slideshow";
 import { BEATS, directClips, fitDurations, keepUserOrder, type BeatId } from "@/lib/video/director";
 import { MUSIC, MUSIC_CATEGORIES, type MusicTrack } from "@/lib/video/music";
 import { EXPORT_SIZES, type ExportFps, type ExportSize } from "@/lib/video/export-presets";
@@ -31,6 +31,7 @@ type Clip = {
   transition: Transition;
   textMotion: TextMotion;
   textStyle: TextStyle;
+  frame?: FrameMode;
   loop?: boolean;
   library?: boolean;
 };
@@ -70,6 +71,8 @@ export function VideoEditor() {
   const [filmSeconds, setFilmSeconds] = useState<number | null>(180);
   const [filmMood, setFilmMood] = useState<"warm" | "bold" | "calm">("warm");
   const [photoOrder, setPhotoOrder] = useState<"keep" | "story">("keep");
+  const [introOn, setIntroOn] = useState(true);
+  const [endingOn, setEndingOn] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"mp4" | "webm">("mp4");
   const [exportSize, setExportSize] = useState<ExportSize>("1080p");
@@ -137,10 +140,12 @@ export function VideoEditor() {
       if (clip.kind === "audio") continue;
       if (at < clip.start || at >= clip.start + clip.duration) continue;
       const local = clip.duration > 0 ? (at - clip.start) / clip.duration : 0;
-      const fade = clip.transition === "fade" && local > 0 && local < 1 ? Math.min(1, local / 0.12, (1 - local) / 0.12) : 1;
+      const fade = clip.transition === "black" ? 0.55 : clip.transition === "fade" ? 0.7 : 0;
+      const into = fade ? Math.min(1, Math.max(0, at - clip.start) / fade) : 1;
+      const outOf = clip.transition === "black" ? Math.min(1, Math.max(0, clip.start + clip.duration - at) / fade) : 1;
       const slide = clip.transition === "slide" && local > 0 && local < 0.22 ? (1 - local / 0.22) * designW * 0.18 : 0;
       ctx.save();
-      ctx.globalAlpha = fade;
+      ctx.globalAlpha = Math.min(into, outOf);
       ctx.translate(slide, 0);
       if (clip.kind === "image" && clip.url) {
         let img = images.current.get(clip.id);
@@ -155,7 +160,7 @@ export function VideoEditor() {
       }
       if (clip.kind === "video") {
         const video = mediaFor(clip) as HTMLVideoElement | null;
-        if (video && video.readyState >= 2) paintPicture(ctx, video, designW, designH, clip, local, true);
+        if (video && video.readyState >= 2) paintPicture(ctx, video, designW, designH, clip, local);
       }
       if (clip.kind === "text" && clip.text) paintText(ctx, clip, designW, designH, local);
       ctx.restore();
@@ -335,7 +340,7 @@ export function VideoEditor() {
         fontSize: 54,
         x: 0.5,
         y: 0.86,
-        volume: kind === "audio" ? 1 : 0,
+        volume: kind === "audio" || kind === "video" ? 1 : 0,
         ...FX,
       });
     }
@@ -411,7 +416,7 @@ export function VideoEditor() {
     remember();
     const timed = fitDurations(base, filmSeconds, reorder);
     setPhotos(timed.map((photo) => ({ id: photo.id, name: photo.name, url: photo.url || "", caption: photo.caption, beat: photo.beat })));
-    const clips = directClips(timed, filmSeconds, filmMood, reorder);
+    const clips = directClips(timed, filmSeconds, filmMood, { reorder, intro: introOn, ending: endingOn });
     const musicId = filmMood === "bold" ? "sport-a" : filmMood === "calm" ? "calm-a" : "emotion-a";
     const track = MUSIC.find((item) => item.id === musicId);
     const end = clips.reduce((max, clip) => Math.max(max, clip.start + clip.duration), 12);
@@ -810,6 +815,8 @@ export function VideoEditor() {
             {([["keep", "원본 순서 유지"], ["story", "AI가 스토리에 맞게 재배치"]] as const).map(([value, label]) => (
               <button key={value} type="button" onClick={() => setPhotoOrder(value)} className={`rounded-full px-2 py-1 font-bold ${photoOrder === value ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
             ))}
+            <button type="button" onClick={() => setIntroOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${introOn ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>인트로 {introOn ? "켜짐" : "꺼짐"}</button>
+            <button type="button" onClick={() => setEndingOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingOn ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>엔딩 카드 {endingOn ? "켜짐" : "꺼짐"}</button>
             <button type="button" onClick={runDirector} className="rounded-md bg-white px-2 py-1 font-bold text-[#1c150e]">이 구성으로 만들기</button>
           </div>
           <div className="mt-2 space-y-1">
@@ -865,7 +872,7 @@ export function VideoEditor() {
                     <input type="color" value={selectedClip.color} onChange={(e) => patch(selectedClip.id, { color: e.target.value })} />
                   </label>
                   <Chips label="등장" value={selectedClip.textMotion ?? "rise"} options={TEXT_MOTIONS} onChange={(textMotion) => patch(selectedClip.id, { textMotion })} />
-                  <Chips label="스타일" value={selectedClip.textStyle ?? "bar"} options={TEXT_STYLES} onChange={(textStyle) => patch(selectedClip.id, { textStyle })} />
+                  <Chips label="스타일" value={selectedClip.textStyle ?? "body"} options={TEXT_STYLES} onChange={(textStyle) => patch(selectedClip.id, { textStyle })} />
                   <Chips
                     label="위치"
                     value={selectedClip.y < 0.35 ? "top" : selectedClip.y > 0.7 ? "bottom" : "middle"}
@@ -945,8 +952,8 @@ function imageClip(id: string, name: string, url: string, start: number, caption
     y: 0.86,
     volume: 0,
     ...FX,
-    motion: "zoom-in",
-    transition: "fade",
+    motion: "slow-zoom",
+    frame: "blur",
   };
 }
 
@@ -975,17 +982,31 @@ function paintPicture(
   h: number,
   clip: Clip,
   local: number,
-  fill = false,
 ) {
-  const motion = clip.motion ?? "none";
-  const scale = motion === "zoom-in" ? 1 + local * 0.12 : motion === "zoom-out" ? 1.12 - local * 0.12 : motion === "none" ? 1 : 1.08;
-  const dx = motion === "pan-left" ? (0.5 - local) * w * 0.08 : motion === "pan-right" ? (local - 0.5) * w * 0.08 : 0;
+  const sw = source.videoWidth || source.naturalWidth || w;
+  const sh = source.videoHeight || source.naturalHeight || h;
+  const vertical = sh > sw * 1.05;
+  const frame = clip.frame ?? "blur";
+  let motion = clip.motion ?? "slow-zoom";
+  if (vertical && motion !== "face-focus" && motion !== "none") motion = "slow-zoom";
+  const slow = motion === "slow-zoom" || motion === "face-focus";
+  const scale = motion === "zoom-in" ? 1 + local * 0.06 : motion === "zoom-out" ? 1.05 - local * 0.04 : slow ? 1 + local * 0.04 : motion === "none" ? 1 : 1.03;
+  const dx = motion === "pan-left" ? (0.5 - local) * w * 0.035 : motion === "pan-right" ? (local - 0.5) * w * 0.035 : 0;
+  const dy = motion === "face-focus" ? -h * 0.02 * local : 0;
+  if (frame === "blur") {
+    ctx.save();
+    ctx.filter = "blur(26px) saturate(1.12) brightness(0.7)";
+    cover(ctx, source, w, h);
+    ctx.restore();
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    ctx.fillRect(0, 0, w, h);
+  }
   ctx.save();
   ctx.filter = lookFilter(clip.look ?? "none");
-  ctx.translate(w / 2 + dx, h / 2);
+  ctx.translate(w / 2 + dx, h / 2 + dy);
   ctx.scale(scale, scale);
   ctx.translate(-w / 2, -h / 2);
-  if (fill) cover(ctx, source, w, h);
+  if (frame === "cover") cover(ctx, source, w, h);
   else contain(ctx, source, w, h);
   ctx.restore();
 }
@@ -1001,7 +1022,11 @@ function lookFilter(look: Look) {
 
 function paintText(ctx: CanvasRenderingContext2D, clip: Clip, w: number, h: number, local: number) {
   const motion = clip.textMotion ?? "none";
-  const shown = motion === "type" ? clip.text.slice(0, Math.max(1, Math.ceil(clip.text.length * Math.min(1, local <= 0 ? 1 : local / 0.65)))) : clip.text;
+  const full = clip.text.trim();
+  if (!full) return;
+  const shown = motion === "type" ? full.slice(0, Math.max(1, Math.ceil(full.length * Math.min(1, local <= 0 ? 1 : local / 0.65)))) : full;
+  const style = clip.textStyle ?? "body";
+  const card = clip.name === "엔딩";
   let alpha = 1;
   let dy = 0;
   let scale = 1;
@@ -1009,39 +1034,88 @@ function paintText(ctx: CanvasRenderingContext2D, clip: Clip, w: number, h: numb
     if (motion === "fade") alpha = Math.min(1, local / 0.28);
     if (motion === "rise") {
       alpha = Math.min(1, local / 0.22);
-      dy = (1 - Math.min(1, local / 0.35)) * 46;
+      dy = (1 - Math.min(1, local / 0.35)) * 36;
     }
     if (motion === "pop") {
       alpha = Math.min(1, local / 0.14);
-      scale = 0.7 + 0.3 * Math.min(1, local / 0.28);
+      scale = 0.86 + 0.14 * Math.min(1, local / 0.28);
     }
   }
+  const fontSize = style === "year" ? Math.max(clip.fontSize, 64) : style === "ending" ? Math.max(52, Math.min(clip.fontSize, 68)) : Math.min(clip.fontSize, 46);
   ctx.save();
   ctx.globalAlpha *= alpha;
-  ctx.translate(w * clip.x, h * clip.y + dy);
-  ctx.scale(scale, scale);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `800 ${clip.fontSize}px "IBM Plex Sans KR", "Noto Sans KR", sans-serif`;
-  const style = clip.textStyle ?? "bar";
-  if (style === "bar") {
-    const width = Math.min(w * 0.86, ctx.measureText(shown).width + 56);
+  ctx.font = `${style === "year" ? 800 : 700} ${fontSize}px "IBM Plex Sans KR", "Noto Sans KR", sans-serif`;
+  const maxWidth = w * 0.78;
+  const lines = wrapMeasured(ctx, shown, maxWidth);
+  const lineH = fontSize * 1.2;
+  const block = lines.length * lineH;
+  const maxBottom = h * 0.9;
+  let centerY = h * 0.8;
+  if (clip.name === "인트로") centerY = h * 0.5;
+  else if (clip.name === "엔딩") centerY = h * 0.52;
+  else if (style === "year") centerY = h * 0.62;
+  if (centerY + block / 2 > maxBottom) centerY = maxBottom - block / 2;
+  ctx.translate(w * 0.5, centerY + dy);
+  ctx.scale(scale, scale);
+  if (style === "body" || style === "bar") {
+    const widest = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
+    const width = Math.min(maxWidth, widest + 48);
     ctx.fillStyle = "rgba(0,0,0,.55)";
-    ctx.fillRect(-width / 2, -clip.fontSize * 0.72, width, clip.fontSize * 1.45);
+    ctx.fillRect(-width / 2, -block / 2 - 8, width, block + 16);
   }
-  if (style === "shadow") {
-    ctx.shadowColor = "rgba(0,0,0,.75)";
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 4;
+  if (card && style === "ending") {
+    ctx.fillStyle = "rgba(240,140,0,.9)";
+    ctx.fillRect(-42, -block / 2 - 46, 84, 2);
+    ctx.font = `700 22px "IBM Plex Sans KR", "Noto Sans KR", sans-serif`;
+    ctx.fillStyle = "#f3d7a1";
+    ctx.fillText("애드스마일", 0, -block / 2 - 24);
+    ctx.font = `700 ${fontSize}px "IBM Plex Sans KR", "Noto Sans KR", sans-serif`;
   }
-  ctx.fillStyle = clip.color;
-  if (style === "outline") {
-    ctx.lineWidth = Math.max(6, clip.fontSize / 10);
-    ctx.strokeStyle = "#1c150e";
-    ctx.strokeText(shown, 0, 0);
+  if (style === "shadow" || style === "ending") {
+    ctx.shadowColor = "rgba(0,0,0,.7)";
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 3;
   }
-  ctx.fillText(shown, 0, 0);
+  lines.forEach((line, index) => {
+    const y = -block / 2 + lineH * index + lineH / 2;
+    ctx.fillStyle = style === "year" ? "#fff6df" : clip.color;
+    if (style === "outline" || style === "year") {
+      ctx.lineWidth = Math.max(4, fontSize / 14);
+      ctx.strokeStyle = "#1c150e";
+      ctx.strokeText(line, 0, y);
+    }
+    ctx.fillText(line, 0, y);
+  });
   ctx.restore();
+}
+
+function wrapMeasured(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  if (ctx.measureText(clean).width <= maxWidth) return [clean];
+  const units = clean.includes(" ") ? clean.split(" ") : [...clean];
+  const joiner = clean.includes(" ") ? " " : "";
+  let line = "";
+  const lines: string[] = [];
+  for (const unit of units) {
+    const next = line ? line + joiner + unit : unit;
+    if (line && ctx.measureText(next).width > maxWidth) {
+      lines.push(line);
+      line = unit;
+      if (lines.length === 2) break;
+    } else {
+      line = next;
+    }
+  }
+  if (lines.length < 2 && line) lines.push(line);
+  if (lines.length === 2 && ctx.measureText(lines[1] ?? "").width > maxWidth) {
+    let fitted = lines[1] ?? "";
+    while (fitted.length > 1 && ctx.measureText(`${fitted}…`).width > maxWidth) fitted = fitted.slice(0, -1);
+    lines[1] = `${fitted}…`;
+  }
+  return lines.slice(0, 2);
 }
 
 function Chips<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (id: T) => void }) {
@@ -1070,13 +1144,16 @@ const LOOKS: { id: Look; label: string }[] = [
 const MOTIONS: { id: Motion; label: string }[] = [
   { id: "none", label: "고정" },
   { id: "zoom-in", label: "확대" },
+  { id: "slow-zoom", label: "천천히 확대" },
+  { id: "face-focus", label: "얼굴 확대" },
   { id: "zoom-out", label: "축소" },
   { id: "pan-left", label: "왼쪽" },
   { id: "pan-right", label: "오른쪽" },
 ];
 const TRANSITIONS: { id: Transition; label: string }[] = [
   { id: "none", label: "없음" },
-  { id: "fade", label: "페이드" },
+  { id: "fade", label: "크로스페이드" },
+  { id: "black", label: "암전" },
   { id: "slide", label: "밀기" },
 ];
 const TEXT_MOTIONS: { id: TextMotion; label: string }[] = [
@@ -1087,6 +1164,9 @@ const TEXT_MOTIONS: { id: TextMotion; label: string }[] = [
   { id: "type", label: "타자" },
 ];
 const TEXT_STYLES: { id: TextStyle; label: string }[] = [
+  { id: "body", label: "설명" },
+  { id: "year", label: "연도 제목" },
+  { id: "ending", label: "엔딩" },
   { id: "bar", label: "자막바" },
   { id: "outline", label: "외곽선" },
   { id: "shadow", label: "그림자" },

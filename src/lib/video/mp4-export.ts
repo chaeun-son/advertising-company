@@ -44,8 +44,15 @@ export async function encodeMp4(options: {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const mixed = await mixAudio(options.audio ?? [], duration);
+  const requested = (options.audio ?? []).filter((clip) => clip.url && clip.volume > 0 && clip.duration > 0);
+  const mixed = await mixAudio(requested, duration);
+  if (requested.length && !mixed) {
+    throw new Error("타임라인의 소리를 읽지 못했습니다. 음악 파일이나 영상 원음을 확인한 뒤 다시 받아 주세요.");
+  }
   const audio = mixed && (await aacAvailable(mixed.sampleRate)) ? mixed : null;
+  if (mixed && !audio) {
+    throw new Error("이 브라우저는 MP4 소리(AAC)를 만들지 못합니다. Chrome에서 다시 받거나 WEBM을 사용해 주세요.");
+  }
   const target = new ArrayBufferTarget();
   const muxer = new Muxer({
     target,
@@ -115,7 +122,7 @@ async function mixAudio(clips: ExportAudio[], duration: number) {
   let mixed = 0;
   for (const clip of audible) {
     try {
-      const response = await fetch(new URL(clip.url, location.origin));
+      const response = await fetch(clip.url);
       const decoded = await context.decodeAudioData(await response.arrayBuffer());
       const source = context.createBufferSource();
       source.buffer = decoded;
@@ -135,14 +142,6 @@ async function mixAudio(clips: ExportAudio[], duration: number) {
 }
 
 async function encodeAac(muxer: Muxer<ArrayBufferTarget>, audio: AudioBuffer) {
-  if (typeof AudioEncoder === "undefined") return;
-  const support = await AudioEncoder.isConfigSupported({
-    codec: "mp4a.40.2",
-    sampleRate: audio.sampleRate,
-    numberOfChannels: 2,
-    bitrate: 128000,
-  });
-  if (!support.supported) return;
   const encoder = new AudioEncoder({
     output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
     error: (error) => {
@@ -158,22 +157,28 @@ async function encodeAac(muxer: Muxer<ArrayBufferTarget>, audio: AudioBuffer) {
   const left = audio.getChannelData(0);
   const right = audio.numberOfChannels > 1 ? audio.getChannelData(1) : left;
   const packet = 1024;
-  for (let offset = 0; offset < left.length; offset += packet) {
+  const frameDuration = Math.round((packet / audio.sampleRate) * 1_000_000);
+  let chunks = 0;
+  for (let offset = 0, index = 0; offset < left.length; offset += packet, index += 1) {
     const frames = Math.min(packet, left.length - offset);
     const data = new Float32Array(packet * 2);
-    data.set(left.subarray(offset, offset + frames), 0);
-    data.set(right.subarray(offset, offset + frames), packet);
+    for (let i = 0; i < frames; i += 1) {
+      data[i * 2] = left[offset + i] ?? 0;
+      data[i * 2 + 1] = right[offset + i] ?? 0;
+    }
     const sample = new AudioData({
-      format: "f32-planar",
+      format: "f32",
       sampleRate: audio.sampleRate,
       numberOfFrames: packet,
       numberOfChannels: 2,
-      timestamp: Math.round((offset / audio.sampleRate) * 1_000_000),
+      timestamp: index * frameDuration,
       data,
     });
     encoder.encode(sample);
     sample.close();
+    chunks += 1;
   }
   await encoder.flush();
   encoder.close();
+  if (!chunks) throw new Error("AAC 소리 트랙이 비어 있습니다.");
 }
