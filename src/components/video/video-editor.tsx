@@ -55,6 +55,7 @@ function fmt(sec: number) {
 }
 
 type PhotoCard = { id: string; name: string; url: string; caption: string; beat?: BeatId };
+type EditSnapshot = { clips: Clip[]; photos: PhotoCard[] };
 
 export function VideoEditor() {
   const [clips, setClips] = useState<Clip[]>([]);
@@ -73,12 +74,13 @@ export function VideoEditor() {
   const [exportSize, setExportSize] = useState<ExportSize>("1080p");
   const [exportFps, setExportFps] = useState<ExportFps>(30);
   const [projects, setProjects] = useState<Pick<VideoProjectRecord, "id" | "name" | "savedAt">[]>([]);
-  const [past, setPast] = useState<Clip[][]>([]);
-  const [future, setFuture] = useState<Clip[][]>([]);
+  const [past, setPast] = useState<EditSnapshot[]>([]);
+  const [future, setFuture] = useState<EditSnapshot[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioNodes = useRef(new Map<string, { source: MediaElementAudioSourceNode; gain: GainNode }>());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const clipsRef = useRef(clips);
+  const photosRef = useRef(photos);
   const timeRef = useRef(0);
   const playingRef = useRef(false);
   const videos = useRef(new Map<string, HTMLVideoElement>());
@@ -87,6 +89,7 @@ export function VideoEditor() {
   const raf = useRef(0);
   const clock = useRef({ origin: 0, at: 0 });
   clipsRef.current = clips;
+  photosRef.current = photos;
   timeRef.current = time;
   playingRef.current = playing;
 
@@ -264,7 +267,7 @@ export function VideoEditor() {
   }, [clips]);
 
   function remember() {
-    setPast((cur) => [...cur.slice(-29), clipsRef.current]);
+    setPast((cur) => [...cur.slice(-29), { clips: clipsRef.current, photos: photosRef.current }]);
     setFuture([]);
   }
 
@@ -272,8 +275,9 @@ export function VideoEditor() {
     setPast((cur) => {
       const prev = cur[cur.length - 1];
       if (!prev) return cur;
-      setFuture((next) => [clipsRef.current, ...next]);
-      setClips(prev);
+      setFuture((next) => [{ clips: clipsRef.current, photos: photosRef.current }, ...next]);
+      setClips(prev.clips);
+      setPhotos(prev.photos);
       return cur.slice(0, -1);
     });
   }
@@ -282,8 +286,9 @@ export function VideoEditor() {
     setFuture((cur) => {
       const next = cur[0];
       if (!next) return cur;
-      setPast((prev) => [...prev.slice(-29), clipsRef.current]);
-      setClips(next);
+      setPast((prev) => [...prev.slice(-29), { clips: clipsRef.current, photos: photosRef.current }]);
+      setClips(next.clips);
+      setPhotos(next.photos);
       return cur.slice(1);
     });
   }
@@ -342,6 +347,7 @@ export function VideoEditor() {
   }
 
   function setCaption(id: string, caption: string) {
+    remember();
     setPhotos((cur) => cur.map((photo) => (photo.id === id ? { ...photo, caption } : photo)));
     setClips((cur) => cur.map((clip) => {
       if (clip.id === `${id}-caption`) return { ...clip, text: caption };
@@ -454,8 +460,8 @@ export function VideoEditor() {
     requestAnimationFrame(() => draw(timeRef.current));
   }
 
-  function patch(id: string, partial: Partial<Clip>) {
-    remember();
+  function patch(id: string, partial: Partial<Clip>, keepHistory = true) {
+    if (keepHistory) remember();
     setClips((cur) => cur.map((c) => (c.id === id ? { ...c, ...partial } : c)));
     requestAnimationFrame(() => draw(timeRef.current));
   }
@@ -888,7 +894,7 @@ export function VideoEditor() {
                     key={clip.id}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setSelected(clip.id); }}
-                    onPointerDown={(e) => dragClip(e, clip, zoom, patch)}
+                    onPointerDown={(e) => dragClip(e, clip, zoom, patch, remember)}
                     className={`absolute top-1 h-6 truncate rounded px-2 text-left text-[10px] font-bold ${selected === clip.id ? "bg-[#f08c00] text-[#1c150e]" : "bg-[#6b4a28] text-[#fffaf3]"}`}
                     style={{ left: clip.start * zoom, width: Math.max(18, clip.duration * zoom) }}
                   >
@@ -1110,12 +1116,23 @@ function probe(url: string, kind: Kind) {
   });
 }
 
-function dragClip(e: ReactPointerEvent, clip: Clip, zoom: number, patch: (id: string, partial: Partial<Clip>) => void) {
+function dragClip(
+  e: ReactPointerEvent,
+  clip: Clip,
+  zoom: number,
+  patch: (id: string, partial: Partial<Clip>, keepHistory?: boolean) => void,
+  onStart: () => void,
+) {
   if (e.button !== 0) return;
   const startX = e.clientX;
   const origin = clip.start;
+  let started = false;
   const move = (ev: PointerEvent) => {
-    patch(clip.id, { start: Math.max(0, origin + (ev.clientX - startX) / zoom) });
+    if (!started) {
+      started = true;
+      onStart();
+    }
+    patch(clip.id, { start: Math.max(0, origin + (ev.clientX - startX) / zoom) }, false);
   };
   const up = () => {
     window.removeEventListener("pointermove", move);

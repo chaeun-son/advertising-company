@@ -44,7 +44,8 @@ export async function encodeMp4(options: {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const audio = await mixAudio(options.audio ?? [], duration);
+  const mixed = await mixAudio(options.audio ?? [], duration);
+  const audio = mixed && (await aacAvailable(mixed.sampleRate)) ? mixed : null;
   const target = new ArrayBufferTarget();
   const muxer = new Muxer({
     target,
@@ -89,6 +90,21 @@ export async function encodeMp4(options: {
   if (audio) await encodeAac(muxer, audio);
   muxer.finalize();
   return { blob: new Blob([target.buffer], { type: "video/mp4" }), audio: Boolean(audio) };
+}
+
+async function aacAvailable(sampleRate: number) {
+  if (typeof AudioEncoder === "undefined") return false;
+  try {
+    const support = await AudioEncoder.isConfigSupported({
+      codec: "mp4a.40.2",
+      sampleRate,
+      numberOfChannels: 2,
+      bitrate: 128000,
+    });
+    return Boolean(support.supported);
+  } catch {
+    return false;
+  }
 }
 
 async function mixAudio(clips: ExportAudio[], duration: number) {
