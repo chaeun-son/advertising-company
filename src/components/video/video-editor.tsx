@@ -3,7 +3,7 @@ import { Clapperboard, Pause, Play, Scissors, Trash2, Type, Upload, Download, Im
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import { fileKind, FX, planSlideshow, slideshowDuration, type Look, type MediaKind, type Motion, type TextMotion, type TextStyle, type Transition } from "@/lib/video/slideshow";
-import { BEATS, directClips, fitDurations, type BeatId } from "@/lib/video/director";
+import { BEATS, directClips, fitDurations, keepUserOrder, type BeatId } from "@/lib/video/director";
 import { MUSIC, MUSIC_CATEGORIES, type MusicTrack } from "@/lib/video/music";
 import { EXPORT_SIZES, type ExportFps, type ExportSize } from "@/lib/video/export-presets";
 import { encodeMp4 } from "@/lib/video/mp4-export";
@@ -69,6 +69,7 @@ export function VideoEditor() {
   const [directorOpen, setDirectorOpen] = useState(false);
   const [filmSeconds, setFilmSeconds] = useState<number | null>(180);
   const [filmMood, setFilmMood] = useState<"warm" | "bold" | "calm">("warm");
+  const [photoOrder, setPhotoOrder] = useState<"keep" | "story">("keep");
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"mp4" | "webm">("mp4");
   const [exportSize, setExportSize] = useState<ExportSize>("1080p");
@@ -397,14 +398,20 @@ export function VideoEditor() {
   }
 
   function runDirector() {
-    if (!photos.length) {
+    if (!photos.length && !clipsRef.current.some((clip) => clip.kind === "image")) {
       toast.error("사진을 먼저 올려 주세요.");
       return;
     }
+    const reorder = photoOrder === "story";
+    const timelineIds = clipsRef.current
+      .filter((clip) => clip.kind === "image")
+      .sort((a, b) => a.start - b.start || a.track - b.track)
+      .map((clip) => (clip.id.endsWith("-photo") ? clip.id.slice(0, -"-photo".length) : clip.id));
+    const base = reorder ? photos : keepUserOrder(photos, timelineIds);
     remember();
-    const timed = fitDurations(photos, filmSeconds);
+    const timed = fitDurations(base, filmSeconds, reorder);
     setPhotos(timed.map((photo) => ({ id: photo.id, name: photo.name, url: photo.url || "", caption: photo.caption, beat: photo.beat })));
-    const clips = directClips(timed, filmSeconds, filmMood);
+    const clips = directClips(timed, filmSeconds, filmMood, reorder);
     const musicId = filmMood === "bold" ? "sport-a" : filmMood === "calm" ? "calm-a" : "emotion-a";
     const track = MUSIC.find((item) => item.id === musicId);
     const end = clips.reduce((max, clip) => Math.max(max, clip.start + clip.duration), 12);
@@ -432,7 +439,9 @@ export function VideoEditor() {
     setTime(0);
     timeRef.current = 0;
     setDirectorOpen(true);
-    toast.success("스토리, 길이, 분위기를 맞춰 두었습니다. 타임라인에서 그대로 고칠 수 있습니다.");
+    toast.success(reorder
+      ? "스토리 순서로 다시 배치했습니다. 실행 취소를 한 번 누르면 원래 순서로 돌아갑니다."
+      : "사진 순서는 그대로 두고 길이, 효과, 음악을 맞췄습니다.");
   }
 
   function addText() {
@@ -787,7 +796,7 @@ export function VideoEditor() {
       </div>
 
       {directorOpen ? (
-        <div className="max-h-40 overflow-y-auto border-b border-white/10 px-3 py-2 text-[12px]">
+        <div className="max-h-52 overflow-y-auto border-b border-white/10 px-3 py-2 text-[12px]">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold text-white/60">길이</span>
             {[[null, "자동"], [180, "3분"], [300, "5분"], [600, "10분"]].map(([value, label]) => (
@@ -797,10 +806,18 @@ export function VideoEditor() {
             {([["warm", "감동"], ["bold", "강렬"], ["calm", "잔잔"]] as const).map(([value, label]) => (
               <button key={value} type="button" onClick={() => setFilmMood(value)} className={`rounded-full px-2 py-1 font-bold ${filmMood === value ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
             ))}
+            <span className="ml-2 font-bold text-white/60">사진 순서</span>
+            {([["keep", "원본 순서 유지"], ["story", "AI가 스토리에 맞게 재배치"]] as const).map(([value, label]) => (
+              <button key={value} type="button" onClick={() => setPhotoOrder(value)} className={`rounded-full px-2 py-1 font-bold ${photoOrder === value ? "bg-[#f08c00] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+            ))}
             <button type="button" onClick={runDirector} className="rounded-md bg-white px-2 py-1 font-bold text-[#1c150e]">이 구성으로 만들기</button>
           </div>
           <div className="mt-2 space-y-1">
-            {fitDurations(photos, filmSeconds).map((photo) => (
+            {fitDurations(
+              photoOrder === "story" ? photos : keepUserOrder(photos, clips.filter((clip) => clip.kind === "image").sort((a, b) => a.start - b.start).map((clip) => clip.id.endsWith("-photo") ? clip.id.slice(0, -"-photo".length) : clip.id)),
+              filmSeconds,
+              photoOrder === "story",
+            ).map((photo) => (
               <div key={photo.id} className="flex items-center gap-2">
                 <select value={photo.beat} onChange={(e) => setPhotos((cur) => cur.map((item) => item.id === photo.id ? { ...item, beat: e.target.value as BeatId } : item))} className="h-7 rounded bg-white/10 px-1">
                   {BEATS.map((beat) => <option key={beat.id} value={beat.id}>{beat.title}</option>)}

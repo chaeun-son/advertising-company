@@ -61,9 +61,28 @@ export function orderStory(photos: StoryPhoto[]) {
   return [...photos].sort((a, b) => (rank.get(a.beat ?? "event") ?? 0) - (rank.get(b.beat ?? "event") ?? 0));
 }
 
-export function fitDurations(photos: StoryPhoto[], targetSeconds: number | null) {
+/** 타임라인에 올려 둔 순서를 우선하고, 없는 사진은 현재 배열 순서로 뒤에 붙인다. 파일명으로 다시 정렬하지 않는다. */
+export function keepUserOrder<T extends { id: string }>(photos: T[], timelineIds: readonly string[]): T[] {
+  if (!timelineIds.length) return photos.slice();
+  const byId = new Map(photos.map((photo) => [photo.id, photo]));
+  const ordered: T[] = [];
+  const seen = new Set<string>();
+  for (const id of timelineIds) {
+    const photo = byId.get(id);
+    if (!photo || seen.has(id)) continue;
+    seen.add(id);
+    ordered.push(photo);
+  }
+  for (const photo of photos) {
+    if (!seen.has(photo.id)) ordered.push(photo);
+  }
+  return ordered;
+}
+
+export function fitDurations(photos: StoryPhoto[], targetSeconds: number | null, reorder = false) {
   if (!photos.length) return [];
-  const ordered = orderStory(assignStory(photos));
+  const assigned = assignStory(photos);
+  const ordered = reorder ? orderStory(assigned) : assigned;
   const natural = ordered.map((photo) => naturalSeconds(photo, photo.beat ?? "event"));
   if (!targetSeconds) return ordered.map((photo, index) => ({ ...photo, seconds: natural[index] }));
   const sum = natural.reduce((total, value) => total + value, 0) || 1;
@@ -73,8 +92,13 @@ export function fitDurations(photos: StoryPhoto[], targetSeconds: number | null)
   return ordered.map((photo, index) => ({ ...photo, seconds: Math.max(1.2, scaled[index]) }));
 }
 
-export function directClips(photos: StoryPhoto[], targetSeconds: number | null, mood: "warm" | "bold" | "calm"): PlannedClip[] {
-  const timed = fitDurations(photos, targetSeconds);
+export function directClips(
+  photos: StoryPhoto[],
+  targetSeconds: number | null,
+  mood: "warm" | "bold" | "calm",
+  reorder = false,
+): PlannedClip[] {
+  const timed = fitDurations(photos, targetSeconds, reorder);
   const slides = timed.map((photo) => ({
     id: photo.id,
     name: photo.name,
