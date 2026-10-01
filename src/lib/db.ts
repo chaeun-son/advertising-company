@@ -1,22 +1,24 @@
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
+import { PROD_DB_ERROR, isProductionRuntime, readDatabaseUrl, resolveDbPlan } from "./db-backend";
 
 /** Which database backend is active. */
 export type DbSource = "neon" | "pglite";
 
+export { PROD_DB_ERROR, isProductionRuntime };
+
 // An empty/whitespace DATABASE_URL (an easy misconfig in deploy UIs) must mean
 // "unset" — otherwise production would silently run on the PGLite fallback.
-const rawDatabaseUrl =
-  typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
 const databaseUrl =
-  rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+  typeof process === "undefined" ? undefined : readDatabaseUrl(process.env);
+const dbPlan = typeof process === "undefined" ? "pglite" : resolveDbPlan(process.env);
 
 /**
- * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
- * sandbox), otherwise a local embedded **PGLite** (Postgres compiled to WASM) so
- * the app has a working database even with nothing configured — the live preview
- * included. Swap in Neon later by just setting `DATABASE_URL`; no code changes.
+ * Active backend: external Postgres when `DATABASE_URL` is set.
+ * PGLite (in-memory, no pglite.data file) is only for local development.
+ * Production without DATABASE_URL stays on the postgres path and fails with
+ * PROD_DB_ERROR instead of opening a local file.
  */
-export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
+export const dbSource: DbSource = dbPlan === "pglite" ? "pglite" : "neon";
 
 /**
  * Minimal shared SQL surface, satisfied by both Neon and PGLite. Both the
@@ -85,15 +87,25 @@ function toSql(run: Run): Sql {
   return sql;
 }
 
+function migrationSources(): Record<string, string> {
+  return import.meta.glob("/migrations/*.sql", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>;
+}
+
 function createNeonSql(): Promise<Sql> {
   globalRef.__pgSqlPromise__ ??= (async () => {
-    // Regular Postgres driver: node-postgres (`pg`) — works directly with Neon's
-    // pooled endpoint. One pool per process; warm serverless instances reuse it.
+    if (!databaseUrl) throw new Error(PROD_DB_ERROR);
+    // Regular Postgres driver: node-postgres (`pg`). One pool per process;
+    // warm serverless instances reuse it. PGlite is never imported on this path.
     const { Pool, types } = await import("pg");
     types.setTypeParser(OID_INT8, Number);
     types.setTypeParser(OID_DATE, identity);
     types.setTypeParser(OID_INTERVAL, identity);
-    const pool = new Pool({ connectionString: databaseUrl });
+    const pool = new Pool({ connectionString: databaseUrl, max: 3 });
+    await applyPostgresMigrations(pool);
     return toSql(async <T>(text: string, params: unknown[]) => {
       const res = await pool.query(text, params);
       return res.rows as T[];
@@ -105,8 +117,48 @@ function createNeonSql(): Promise<Sql> {
   return globalRef.__pgSqlPromise__;
 }
 
+async function applyPostgresMigrations(pool: import("pg").Pool): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("select pg_advisory_lock(814213)");
+    await client.query(
+      "create table if not exists _migrations (name text primary key, applied_at timestamptz not null default now())",
+    );
+    const migrations = migrationSources();
+    const doneRows = await client.query<{ name: string }>("select name from _migrations");
+    const pending = pendingMigrations(
+      Object.keys(migrations),
+      doneRows.rows.map((row) => row.name),
+    );
+    for (const { name, path } of pending) {
+      try {
+        await client.query("BEGIN");
+        await client.query(migrations[path]);
+        await client.query("insert into _migrations (name) values ($1)", [name]);
+        await client.query("COMMIT");
+      } catch (err) {
+        try {
+          await client.query("ROLLBACK");
+        } catch {
+          // keep the original migration error
+        }
+        throw err;
+      }
+    }
+  } finally {
+    try {
+      await client.query("select pg_advisory_unlock(814213)");
+    } catch {
+      // connection may already be dead
+    }
+    client.release();
+  }
+}
+
 async function createPgliteSql(): Promise<Sql> {
+  if (dbPlan !== "pglite") throw new Error(PROD_DB_ERROR);
   // Embedded Postgres, imported on demand so it never loads on the Neon path.
+  // Memory only — do not pass a dataDirectory. Production never reaches here.
   // One in-memory instance per process, shared across HMR module instances, so
   // data survives source edits (it resets on dev-server restart).
   globalRef.__pgliteInstance__ ??= (async () => {
@@ -137,11 +189,7 @@ async function createPgliteSql(): Promise<Sql> {
   // passes serialized on a global chain so concurrent callers never
   // double-apply.
   const migrate = async (): Promise<void> => {
-    const migrations = import.meta.glob("/migrations/*.sql", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }) as Record<string, string>;
+    const migrations = migrationSources();
     const doneRows = await pg.query<{ name: string }>(
       "select name from _migrations",
     );
@@ -176,7 +224,8 @@ async function createSql(): Promise<Sql> {
         "or a server route loader, never from client code.",
     );
   }
-  return dbSource === "neon" ? createNeonSql() : createPgliteSql();
+  if (dbPlan === "missing") throw new Error(PROD_DB_ERROR);
+  return dbPlan === "postgres" ? createNeonSql() : createPgliteSql();
 }
 
 /**
@@ -200,8 +249,8 @@ export function getSql(): Promise<Sql> {
  * Kysely dialect). Throws when `DATABASE_URL` is set (that path uses Neon).
  */
 export async function getPglite(): Promise<import("@electric-sql/pglite").PGlite> {
-  if (dbSource !== "pglite") {
-    throw new Error("getPglite() is only available on the PGLite fallback (no DATABASE_URL)");
+  if (dbPlan !== "pglite") {
+    throw new Error(databaseUrl ? "getPglite() is only available without DATABASE_URL" : PROD_DB_ERROR);
   }
   await getSql();
   const pg = await globalRef.__pgliteInstance__;
@@ -220,7 +269,7 @@ export async function getPglite(): Promise<import("@electric-sql/pglite").PGlite
  * module kick it off immediately (see bottom of file).
  */
 export function ensureDbReady(): Promise<void> {
-  if (dbSource !== "pglite") return Promise.resolve();
+  if (dbPlan === "missing") return Promise.reject(new Error(PROD_DB_ERROR));
   return getSql().then(() => undefined);
 }
 
@@ -229,10 +278,13 @@ export function ensureDbReady(): Promise<void> {
 const globalBoot = globalThis as typeof globalThis & {
   __pgBootstrapPromise__?: Promise<void>;
 };
-if (typeof window === "undefined" && dbSource === "pglite") {
+if (typeof window === "undefined" && dbPlan === "pglite") {
   globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
     globalBoot.__pgBootstrapPromise__ = undefined;
     console.error("[db] PGLite bootstrap failed:", err);
     throw err;
   });
+}
+if (typeof window === "undefined" && dbPlan === "missing") {
+  console.error(`[db] ${PROD_DB_ERROR}`);
 }

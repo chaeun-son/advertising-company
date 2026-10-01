@@ -35,7 +35,8 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
-import { ensureDbReady, getPglite } from "../db";
+import { ensureDbReady, getPglite, PROD_DB_ERROR } from "../db";
+import { resolveDbPlan } from "../db-backend";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
@@ -47,8 +48,10 @@ import {
   PREVIEW_CLIENT_SECRET,
 } from "./preview";
 
-// Kick (and share) PGLite bootstrap as soon as the auth server module loads.
-void ensureDbReady();
+// Bootstrap the DB. Production without DATABASE_URL logs and never opens PGlite.
+void ensureDbReady().catch((err) => {
+  console.error("[db]", err instanceof Error ? err.message : err);
+});
 
 /**
  * Preview secret must outlive module reloads: PGLite (and its session rows) is
@@ -150,14 +153,38 @@ const grokAuthorizationUrl = `${issuerBase}/api/auth/oauth2/authorize`;
 const grokTokenUrl = `${issuerBase}/api/auth/oauth2/token`;
 const grokUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
 
-// Real Postgres when `DATABASE_URL` is set (deployed apps), else the app's
-// embedded PGLite (preview) via a Kysely dialect — so Better Auth persists to the
-// SAME DB as app data, including email/password users. Both use the Better Auth
-// schema from `migrations/auth/0001_auth.sql`, copied into `migrations/` when
-// the app turns sign-in on.
-const database = databaseUrl
-  ? new Pool({ connectionString: databaseUrl })
-  : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
+function postgresAuthPool(connectionString: string): Pool {
+  const pool = new Pool({ connectionString, max: 3 });
+  const ready = ensureDbReady();
+  const query = pool.query.bind(pool);
+  const connect = pool.connect.bind(pool);
+  pool.query = ((...args: Parameters<Pool["query"]>) =>
+    ready.then(() => query(...args))) as Pool["query"];
+  pool.connect = ((...args: Parameters<Pool["connect"]>) =>
+    ready.then(() => connect(...args))) as Pool["connect"];
+  return pool;
+}
+
+function refusedAuthPool(): Pool {
+  const pool = new Pool({
+    connectionString: "postgres://127.0.0.1:9/disabled",
+    max: 1,
+    connectionTimeoutMillis: 1,
+  });
+  const fail = () => Promise.reject(new Error(PROD_DB_ERROR));
+  pool.query = fail as Pool["query"];
+  pool.connect = fail as Pool["connect"];
+  return pool;
+}
+
+// Real Postgres when DATABASE_URL is set. Local dev without it uses in-memory
+// PGLite. Vercel without DATABASE_URL refuses instead of opening pglite.data.
+const database =
+  databaseUrl && resolveDbPlan(process.env) === "postgres"
+    ? postgresAuthPool(databaseUrl)
+    : resolveDbPlan(process.env) === "missing"
+      ? refusedAuthPool()
+      : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
 /** Session token cookie name — also read by the live-preview popup completion page. */
 export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
