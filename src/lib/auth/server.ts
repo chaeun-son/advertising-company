@@ -36,6 +36,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite, PROD_DB_ERROR } from "../db";
+import { attachConnectionRetry } from "../db-retry";
 import { resolveDbPlan } from "../db-backend";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
@@ -155,13 +156,7 @@ const grokUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
 
 function postgresAuthPool(connectionString: string): Pool {
   const pool = new Pool({ connectionString, max: 3 });
-  const ready = ensureDbReady();
-  const query = pool.query.bind(pool);
-  const connect = pool.connect.bind(pool);
-  pool.query = ((...args: Parameters<Pool["query"]>) =>
-    ready.then(() => query(...args))) as Pool["query"];
-  pool.connect = ((...args: Parameters<Pool["connect"]>) =>
-    ready.then(() => connect(...args))) as Pool["connect"];
+  attachConnectionRetry(pool, () => ensureDbReady());
   return pool;
 }
 

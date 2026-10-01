@@ -1,4 +1,5 @@
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
+import { attachConnectionRetry } from "./db-retry";
 import { PROD_DB_ERROR, isProductionRuntime, readDatabaseUrl, resolveDbPlan } from "./db-backend";
 
 /** Which database backend is active. */
@@ -105,6 +106,7 @@ function createNeonSql(): Promise<Sql> {
     types.setTypeParser(OID_DATE, identity);
     types.setTypeParser(OID_INTERVAL, identity);
     const pool = new Pool({ connectionString: databaseUrl, max: 3 });
+    attachConnectionRetry(pool);
     await applyPostgresMigrations(pool);
     return toSql(async <T>(text: string, params: unknown[]) => {
       const res = await pool.query(text, params);
