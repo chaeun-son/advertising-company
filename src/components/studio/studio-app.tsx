@@ -11,6 +11,7 @@ import { LibraryPanel } from "./library-panel";
 import { OrderPanel } from "./order-panel";
 import { Workbench } from "./workbench";
 import { saveAutosave } from "@/lib/studio/project-storage";
+import { BRAND, PRODUCT_NAME } from "@/lib/brand";
 
 const MODES: { id: StudioMode; label: string }[] = [
   { id: "order", label: "주문 접수" },
@@ -158,10 +159,10 @@ export function StudioApp() {
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background text-foreground">
       <header className="reference-header flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-border bg-panel px-3 py-2 md:px-4">
         <h1 className="flex items-center gap-2 text-[15px] font-black tracking-tight">
-          <span className="reference-mark" aria-hidden="true">A</span>
+          <img src={BRAND.symbol} alt="" className="size-8 object-contain" />
           <span className="flex flex-col leading-none">
-            <span>애드스마일 편집실</span>
-            <span className="mt-0.5 text-[10px] font-bold tracking-wide text-muted-foreground">현수막 · 배너 · 명함 시안</span>
+            <span>{PRODUCT_NAME}</span>
+            <span className="mt-0.5 text-[10px] font-bold tracking-wide text-muted-foreground">편집실 · 현수막 · 배너 · 명함</span>
           </span>
         </h1>
         <div className="reference-document-title">▤ &nbsp; {brief.name || "새 광고물"} &nbsp; ✎</div>

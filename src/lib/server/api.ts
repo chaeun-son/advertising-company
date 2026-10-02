@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getSql } from "@/lib/db";
+import { isProgramBrandAsset } from "@/lib/brand";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { chargedUnitPrice, isFlatPiece, lineAmount, specLabel, vatBreakdown } from "@/lib/pricing";
 import { seoulMonth } from "@/lib/format";
@@ -874,6 +875,14 @@ export const listClients = createServerFn({ method: "GET" }).middleware([authMid
   }));
 });
 
+function storedCompanyLogo(url: string) {
+  const clean = url.trim();
+  if (!clean || isProgramBrandAsset(clean)) return "";
+  if (clean.length > 160_000) throw new Error("로고는 150KB 이하로 올려 주세요.");
+  if (!clean.startsWith("data:image/") && !/^https?:\/\//i.test(clean)) return "";
+  return clean;
+}
+
 export const updateCompany = createServerFn({ method: "POST" }).middleware([authMiddleware])
   .validator(
     z.object({
@@ -894,16 +903,25 @@ export const updateCompany = createServerFn({ method: "POST" }).middleware([auth
       bizType: z.string().optional().default(""),
       bizItem: z.string().optional().default(""),
       inviteCode: z.string().trim().min(4, "초대코드는 4자 이상"),
+      website: z.string().trim().max(200).optional().default(""),
+      brandColor: z
+        .string()
+        .trim()
+        .optional()
+        .default("")
+        .refine((value) => value === "" || /^#[0-9a-fA-F]{6}$/.test(value), "대표 색은 #RRGGBB"),
+      logoUrl: z.string().max(160_000).optional().default(""),
     }),
   )
   .handler(async ({ data }) => {
     const sql = await getSql();
+    const logoUrl = storedCompanyLogo(data.logoUrl);
     await sql.query(
       `update company_profile set
          name=$1, owner_name=$2, biz_no=$3, phone=$4, fax=$5, address=$6, email=$7,
          bank_name=$8, bank_account=$9, bank_holder=$10, seal_label=$11,
          vat_included=$12, rush_rate=$13, quote_valid_days=$14, biz_type=$15, biz_item=$16,
-         invite_code=$17
+         invite_code=$17, website=$18, brand_color=$19, logo_url=$20
        where id = 1`,
       [
         data.name,
@@ -923,6 +941,9 @@ export const updateCompany = createServerFn({ method: "POST" }).middleware([auth
         data.bizType ?? "",
         data.bizItem ?? "",
         data.inviteCode,
+        data.website ?? "",
+        data.brandColor ?? "",
+        logoUrl,
       ],
     );
     return { ok: true };

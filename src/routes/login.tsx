@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { BrandMark } from "@/components/brand-mark";
+import { BRAND, PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,13 +117,7 @@ function Login() {
     <main className="relative min-h-dvh bg-bg">
       <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-1.5 bg-primary md:block" />
       <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10">
-        <div className="flex items-center gap-3">
-          <BrandMark className="size-11 text-primary" />
-          <div>
-            <p className="font-display text-xl font-bold tracking-tight">애드스마일</p>
-            <p className="text-[12px] tracking-[0.12em] text-muted">SMILE ADVERTISING AGENCY</p>
-          </div>
-        </div>
+        <img src={BRAND.lockup} alt={`${PRODUCT_NAME} · ${PRODUCT_TAGLINE}`} className="h-auto w-full max-w-[16rem] object-contain" />
 
         <h1 className="mt-8 font-display text-3xl font-semibold tracking-tight">{heading}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">

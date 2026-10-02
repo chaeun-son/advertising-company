@@ -8,6 +8,7 @@ import { getDashboard, listOrderMonths } from "@/lib/server/api";
 import { dueLabel, formatClock, formatYearMonth, seoulMonth } from "@/lib/format";
 import { won } from "@/lib/pricing";
 import { PIPELINE, STATUS_META, type Order, type OrderStatus } from "@/lib/types";
+import { PRODUCT_TAGLINE } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/")({
@@ -53,7 +54,7 @@ function DashboardPage() {
     <div className="stagger-in space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[13px] tracking-wide text-muted">애드스마일 디자인팀</p>
+          <p className="text-[13px] tracking-wide text-muted">{PRODUCT_TAGLINE}</p>
           <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">작업 현황</h1>
           <p className="mt-1 text-[13px] text-muted">
             달은 바꿔 봐도 지난 주문은 그대로 있습니다. 출고 안 된 건은 이번 달 판에도 남깁니다.

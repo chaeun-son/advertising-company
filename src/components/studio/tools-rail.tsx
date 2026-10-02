@@ -11,6 +11,7 @@ import {
   Type,
 } from "lucide-react";
 import { useStudio } from "@/lib/studio/store";
+import { BRAND, PRODUCT_NAME } from "@/lib/brand";
 import type { EditorTool } from "@/lib/studio/types";
 
 const TOOLS: { id: EditorTool; label: string; key: string; icon: typeof Square }[] = [
@@ -122,6 +123,7 @@ export function ToolsRail() {
         <Grid3x3 className="size-4" />
         <span className="sr-only">격자 보기</span>
       </button>
+      <img src={BRAND.symbol} alt={PRODUCT_NAME} className="mt-1 hidden h-8 w-auto shrink-0 object-contain md:mt-auto md:block" />
     </div>
   );
 }

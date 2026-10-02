@@ -1,7 +1,7 @@
-import { MonitorSmartphone } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PRODUCT_NAME, BRAND } from "@/lib/brand";
 import { getInstallSnapshot, promptInstall, subscribeInstall, type InstallSnapshot } from "@/lib/pwa-install";
 
 const empty: InstallSnapshot = { canPrompt: false, installed: false };
@@ -14,7 +14,7 @@ export function InstallApp() {
     setBusy(true);
     try {
       const result = await promptInstall();
-      if (result === "accepted") toast.success("시작 메뉴에 애드스마일이 생겼습니다.");
+      if (result === "accepted") toast.success(`시작 메뉴에 ${PRODUCT_NAME}가 생겼습니다.`);
       else if (result === "dismissed") toast.message("설치를 미뤘습니다. 나중에 설정에서 다시 할 수 있습니다.");
       else toast.message("이 창에서는 바로 설치가 안 됩니다. 아래 순서를 따라 주세요.");
     } finally {
@@ -25,9 +25,7 @@ export function InstallApp() {
   return (
     <section className="rounded-[var(--radius-lg)] bg-surface p-4 shadow-[var(--shadow-border)] md:p-5">
       <div className="flex items-start gap-3">
-        <div className="grid size-11 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-primary/12 text-primary">
-          <MonitorSmartphone className="size-5" />
-        </div>
+        <img src={BRAND.app} alt="" className="h-11 w-11 shrink-0 object-contain" />
         <div className="min-w-0">
           <h2 className="font-display text-base font-semibold">프로그램처럼 쓰기</h2>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
@@ -56,7 +54,7 @@ export function InstallApp() {
                 Edge 또는 Chrome으로 이 작업실을 연 다음, 주소창 오른쪽{" "}
                 <span className="font-medium text-fg">설치</span> 아이콘, 또는 메뉴(···) →{" "}
                 <span className="font-medium text-fg">앱 설치</span>를 누릅니다. 시작 메뉴에
-                「애드스마일」이 생기고, 작업 표시줄에 고정할 수 있습니다.
+                「{PRODUCT_NAME}」가 생기고, 작업 표시줄에 고정할 수 있습니다.
               </p>
             </li>
             <li>

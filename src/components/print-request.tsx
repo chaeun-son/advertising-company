@@ -1,6 +1,7 @@
 import { formatDate } from "@/lib/format";
 import { inferColorMode, specLabel, unpackOrderNotes, vatBreakdown, won } from "@/lib/pricing";
 import { suggestRequestName } from "@/lib/catalog";
+import { customerBrandLogo } from "@/lib/brand";
 import type { CompanyProfile, OrderDetail } from "@/lib/types";
 
 export function PrintRequest({
@@ -18,11 +19,15 @@ export function PrintRequest({
   const meta = unpackOrderNotes(order.notes);
   const project = extra ? `${order.title} 외` : order.title;
   const fileHint = suggestRequestName(order.title.replace(/\s+/g, " "), extra, new Date(order.createdAt));
+  const logo = customerBrandLogo(company.logoUrl);
+  const accent = /^#[0-9a-fA-F]{6}$/.test(company.brandColor ?? "") ? company.brandColor : "";
 
   return (
     <article className="mx-auto max-w-[210mm] bg-elevated px-5 py-7 text-fg shadow-[var(--shadow-border)] md:px-8 print:max-w-none print:shadow-none">
+      {accent ? <div className="h-1.5 w-full" style={{ background: accent }} /> : null}
       <header className="bg-primary px-4 py-3 text-center text-primary-fg">
-        <p className="font-display text-lg font-bold tracking-wide">애드스마일 주문 의뢰서</p>
+        <p className="font-display text-lg font-bold tracking-wide">주문 의뢰서</p>
+        {logo ? <img src={logo} alt="" className="mx-auto mt-2 h-10 w-auto max-w-[8rem] object-contain" /> : null}
         <p className="mt-0.5 text-[11px] text-primary-fg/80">{company.name}</p>
       </header>
 

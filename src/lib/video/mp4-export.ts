@@ -1,5 +1,14 @@
 import { ArrayBufferTarget, Muxer } from "mp4-muxer";
-import { avcCodec, exportBitrate, frameCount, type ExportFps } from "./export-presets";
+import { avcCodec, bedStops, exportBitrate, frameCount, type ExportFps, type GainDuck } from "./export-presets";
+
+export function gainAt(volume: number, at: number, start: number, duration: number, fadeOut = 0) {
+  const level = Math.min(1, Math.max(0, volume));
+  if (fadeOut <= 0) return level;
+  const fadeStart = start + Math.max(0, duration - fadeOut);
+  if (at <= fadeStart) return level;
+  if (at >= start + duration) return 0;
+  return level * (1 - (at - fadeStart) / fadeOut);
+}
 
 export type ExportAudio = {
   url: string;
@@ -8,6 +17,15 @@ export type ExportAudio = {
   offset: number;
   volume: number;
   loop?: boolean;
+  fadeIn?: number;
+  clipFadeOut?: number;
+  fadeStart?: number;
+  fadeOut?: number;
+  ducks?: GainDuck[];
+  playbackRate?: number;
+  rateFrom?: number;
+  rateTo?: number;
+  volumeKeys?: { t: number; v: number }[];
 };
 
 export async function mp4EncoderAvailable(width: number, height: number, fps: ExportFps) {
@@ -114,7 +132,7 @@ async function aacAvailable(sampleRate: number) {
   }
 }
 
-async function mixAudio(clips: ExportAudio[], duration: number) {
+export async function mixAudio(clips: ExportAudio[], duration: number) {
   const audible = clips.filter((clip) => clip.url && clip.volume > 0 && clip.duration > 0);
   if (!audible.length || typeof OfflineAudioContext === "undefined") return null;
   const sampleRate = 48000;
@@ -128,9 +146,49 @@ async function mixAudio(clips: ExportAudio[], duration: number) {
       source.buffer = decoded;
       source.loop = Boolean(clip.loop);
       const gain = context.createGain();
-      gain.gain.value = Math.min(1, Math.max(0, clip.volume));
+      const level = Math.min(1, Math.max(0, clip.volume));
+      const keys = (clip.volumeKeys ?? []).filter((key) => Number.isFinite(key.t) && Number.isFinite(key.v)).sort((a, b) => a.t - b.t);
+      if (keys.length) {
+        const first = keys[0]!;
+        gain.gain.setValueAtTime(Math.max(0, Math.min(1, first.v)), Math.max(0, clip.start + first.t));
+        let lastT = Math.max(0, clip.start + first.t);
+        for (const key of keys.slice(1)) {
+          const t = Math.max(lastT + 0.001, clip.start + key.t);
+          gain.gain.linearRampToValueAtTime(Math.max(0, Math.min(1, key.v)), t);
+          lastT = t;
+        }
+      } else {
+        const stops = bedStops(
+          level,
+          clip.start,
+          clip.duration,
+          clip.fadeIn ?? 0,
+          clip.clipFadeOut ?? 0,
+          clip.fadeStart,
+          clip.fadeOut,
+          clip.ducks ?? [],
+        );
+        const first = stops[0] ?? { t: Math.max(0, clip.start), v: level };
+        gain.gain.setValueAtTime(Math.max(0, first.v), Math.max(0, first.t));
+        let lastT = Math.max(0, first.t);
+        for (const stop of stops.slice(1)) {
+          const t = Math.max(lastT + 0.001, stop.t);
+          gain.gain.linearRampToValueAtTime(Math.max(0, stop.v), t);
+          lastT = t;
+        }
+      }
       source.connect(gain);
       gain.connect(context.destination);
+      const from = clip.rateFrom;
+      const to = clip.rateTo;
+      const rate = clip.playbackRate && clip.playbackRate > 0 ? clip.playbackRate : 1;
+      if (from != null && to != null && from !== to) {
+        const t0 = Math.max(0, clip.start);
+        source.playbackRate.setValueAtTime(Math.max(0.05, from), t0);
+        source.playbackRate.linearRampToValueAtTime(Math.max(0.05, to), t0 + Math.max(0.05, clip.duration));
+      } else if (rate !== 1) {
+        source.playbackRate.value = rate;
+      }
       source.start(Math.max(0, clip.start), Math.max(0, clip.offset), clip.duration);
       mixed += 1;
     } catch {

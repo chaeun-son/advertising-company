@@ -181,7 +181,7 @@ function RequestSection() {
     <div className="space-y-4">
       <section className="rounded-[var(--radius-lg)] bg-primary p-4 text-primary-fg md:p-5">
         <p className="text-[12px] text-primary-fg/75">매뉴얼 4. 의뢰서</p>
-        <p className="mt-1 font-display text-xl font-bold">애드스마일 주문 의뢰서</p>
+        <p className="mt-1 font-display text-xl font-bold">주문 의뢰서</p>
         <p className="mt-2 text-sm text-primary-fg/85">
           주문 상세에서 「의뢰서」를 누르면 이 양식으로 인쇄됩니다. 담당자는 상단에서 고른 이름입니다.
         </p>
@@ -297,7 +297,7 @@ function PrintSection() {
         </p>
         <a
           href="/adsmile-print-guide.pdf"
-          download="애드스마일-인쇄작업.pdf"
+          download="인쇄작업.pdf"
           className="mt-4 inline-flex h-10 items-center rounded-full bg-surface px-4 text-sm font-medium text-fg"
         >
           인쇄작업 PDF 받기

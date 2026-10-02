@@ -1,5 +1,6 @@
 import { formatDate, formatDateTime } from "@/lib/format";
 import { won, wonNum } from "@/lib/pricing";
+import { customerBrandLogo } from "@/lib/brand";
 import type { DocumentRecord } from "@/lib/types";
 
 export function PrintDocument({ doc }: { doc: DocumentRecord }) {
@@ -7,17 +8,20 @@ export function PrintDocument({ doc }: { doc: DocumentRecord }) {
   const isQuote = doc.docType === "quote";
   const title = isQuote ? "견 적 서" : "거 래 명 세 서";
   const company = payload.company;
+  const logo = customerBrandLogo(company.logoUrl);
+  const accent = /^#[0-9a-fA-F]{6}$/.test(company.brandColor ?? "") ? company.brandColor : "";
 
   return (
     <article className="mx-auto max-w-[210mm] bg-elevated px-6 py-8 text-fg shadow-[var(--shadow-border)] md:px-10 print:max-w-none print:shadow-none">
+      {accent ? <div className="mb-4 h-1.5 w-full" style={{ background: accent }} /> : null}
       <header className="relative border-b-2 border-primary pb-4">
-        <p className="text-[12px] tracking-[0.2em] text-muted">{company.name}</p>
+        <div className="flex items-center gap-3">
+          {logo ? <img src={logo} alt="" className="h-10 w-auto max-w-[8rem] object-contain" /> : null}
+          <p className="text-[12px] tracking-[0.2em] text-muted">{company.name}</p>
+        </div>
         <h1 className="mt-1 font-display text-3xl font-semibold tracking-[0.35em] md:text-4xl">
           {title}
         </h1>
-        <div className="absolute right-0 top-0">
-          <img src="/adsmile-mark.png" alt="애드스마일" className="size-24 object-contain" />
-        </div>
       </header>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -29,6 +33,8 @@ export function PrintDocument({ doc }: { doc: DocumentRecord }) {
             <div className="flex gap-2"><dt className="w-20 text-subtle">사업자</dt><dd className="tabular-nums">{company.bizNo}</dd></div>
             <div className="flex gap-2"><dt className="w-20 text-subtle">전화</dt><dd className="tabular-nums">{company.phone}</dd></div>
             <div className="flex gap-2"><dt className="w-20 text-subtle">주소</dt><dd>{company.address}</dd></div>
+            {company.email ? <div className="flex gap-2"><dt className="w-20 text-subtle">이메일</dt><dd>{company.email}</dd></div> : null}
+            {company.website ? <div className="flex gap-2"><dt className="w-20 text-subtle">홈페이지</dt><dd>{company.website}</dd></div> : null}
           </dl>
         </section>
         <section className="rounded-[var(--radius-md)] bg-surface p-4">

@@ -66,6 +66,9 @@ export type CompanyProfile = {
   bizType: string;
   bizItem: string;
   inviteCode: string;
+  website: string;
+  brandColor: string;
+  logoUrl: string;
 };
 
 export type Staff = { id: number; name: string; role: string };

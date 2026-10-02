@@ -29,14 +29,14 @@ function SignedShell() {
 
   if (isPending || !data) {
     return (
-      <AppShell staff={[]} companyName="주식회사 애드스마일">
+      <AppShell staff={[]}>
         <p className="text-sm text-muted">작업판을 불러오는 중…</p>
       </AppShell>
     );
   }
 
   return (
-    <AppShell staff={data.staff} companyName={data.company.name}>
+    <AppShell staff={data.staff}>
       <Outlet />
     </AppShell>
   );

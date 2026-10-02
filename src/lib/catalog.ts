@@ -1,7 +1,4 @@
-/** (주)애드스마일 디자인팀 업무 매뉴얼 — 단가·용어·응대·매입처 */
-
-export const COMPANY_SHORT = "애드스마일";
-export const COMPANY_LEGAL = "주식회사 애드스마일";
+/** 디자인팀 업무 매뉴얼 — 단가·용어·응대·매입처. 회사명은 설정 자사 정보에서만 쓴다. */
 export const STAFF_SEED = [
   { name: "최연수", role: "대표" },
   { name: "손채은", role: "과장" },
@@ -305,7 +302,7 @@ export const FLYER_MIN = [
 ] as const;
 
 export const PHONE_SCRIPTS = {
-  greeting: (name: string) => `감사합니다. 애드스마일 ${name}입니다.`,
+  greeting: (name: string) => `감사합니다. ${name}입니다.`,
   banner: [
     "사이즈",
     "수량",
@@ -454,7 +451,7 @@ export const TERMS: Term[] = [
   {
     name: "감사패 · 기념패",
     group: "패",
-    body: "원형 크리스탈 기본 17×18×5. 애드스마일 단가 130,000원/개. 문구가 다르면 장마다 시안.",
+    body: "원형 크리스탈 기본 17×18×5. 기본 단가 130,000원/개. 문구가 다르면 장마다 시안.",
   },
   { name: "단지 배치도", group: "CG", body: "아파트 단지 구성·주변 시설 전체." },
   { name: "동호수 배치도", group: "CG", body: "동·층수 표기." },

@@ -230,6 +230,9 @@ export function mapCompany(row: {
   biz_type?: string;
   biz_item?: string;
   invite_code?: string;
+  website?: string;
+  brand_color?: string;
+  logo_url?: string;
 }): CompanyProfile {
   return {
     id: 1,
@@ -250,6 +253,9 @@ export function mapCompany(row: {
     bizType: row.biz_type ?? "",
     bizItem: row.biz_item ?? "",
     inviteCode: row.invite_code ?? "adsmile",
+    website: row.website ?? "",
+    brandColor: row.brand_color ?? "",
+    logoUrl: row.logo_url ?? "",
   };
 }
 

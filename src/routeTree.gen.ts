@@ -21,6 +21,7 @@ import { Route as AppOrdersIndexRouteImport } from './routes/_app/orders/index'
 import { Route as AppOrdersIdRouteImport } from './routes/_app/orders/$id'
 import { Route as AppOrdersNewRouteImport } from './routes/_app/orders/new'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiMusicSplatRouteImport } from './routes/api/music/$'
 import { Route as PrintQuoteIdRouteImport } from './routes/print/quote.$id'
 import { Route as PrintRequestIdRouteImport } from './routes/print/request.$id'
 import { Route as PrintStatementIdRouteImport } from './routes/print/statement.$id'
@@ -84,6 +85,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMusicSplatRoute = ApiMusicSplatRouteImport.update({
+  id: '/api/music/$',
+  path: '/api/music/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrintQuoteIdRoute = PrintQuoteIdRouteImport.update({
   id: '/print/quote/$id',
   path: '/print/quote/$id',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/orders/$id': typeof AppOrdersIdRoute
   '/orders/new': typeof AppOrdersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/music/$': typeof ApiMusicSplatRoute
   '/print/quote/$id': typeof PrintQuoteIdRoute
   '/print/request/$id': typeof PrintRequestIdRoute
   '/print/statement/$id': typeof PrintStatementIdRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/orders/$id': typeof AppOrdersIdRoute
   '/orders/new': typeof AppOrdersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/music/$': typeof ApiMusicSplatRoute
   '/print/quote/$id': typeof PrintQuoteIdRoute
   '/print/request/$id': typeof PrintRequestIdRoute
   '/print/statement/$id': typeof PrintStatementIdRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_app/orders/$id': typeof AppOrdersIdRoute
   '/_app/orders/new': typeof AppOrdersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/music/$': typeof ApiMusicSplatRoute
   '/print/quote/$id': typeof PrintQuoteIdRoute
   '/print/request/$id': typeof PrintRequestIdRoute
   '/print/statement/$id': typeof PrintStatementIdRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/orders/$id'
     | '/orders/new'
     | '/api/auth/$'
+    | '/api/music/$'
     | '/print/quote/$id'
     | '/print/request/$id'
     | '/print/statement/$id'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/orders/$id'
     | '/orders/new'
     | '/api/auth/$'
+    | '/api/music/$'
     | '/print/quote/$id'
     | '/print/request/$id'
     | '/print/statement/$id'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/_app/orders/$id'
     | '/_app/orders/new'
     | '/api/auth/$'
+    | '/api/music/$'
     | '/print/quote/$id'
     | '/print/request/$id'
     | '/print/statement/$id'
@@ -206,6 +218,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiMusicSplatRoute: typeof ApiMusicSplatRoute
   PrintQuoteIdRoute: typeof PrintQuoteIdRoute
   PrintRequestIdRoute: typeof PrintRequestIdRoute
   PrintStatementIdRoute: typeof PrintStatementIdRoute
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/music/$': {
+      id: '/api/music/$'
+      path: '/api/music/$'
+      fullPath: '/api/music/$'
+      preLoaderRoute: typeof ApiMusicSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/print/quote/$id': {
       id: '/print/quote/$id'
       path: '/print/quote/$id'
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiMusicSplatRoute: ApiMusicSplatRoute,
   PrintQuoteIdRoute: PrintQuoteIdRoute,
   PrintRequestIdRoute: PrintRequestIdRoute,
   PrintStatementIdRoute: PrintStatementIdRoute,

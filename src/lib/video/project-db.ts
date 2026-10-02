@@ -3,12 +3,14 @@ export type VideoPhotoRecord = {
   name: string;
   caption: string;
   beat?: string;
+  uploadIndex?: number;
   type: string;
   buffer: ArrayBuffer;
 };
 
 export type VideoProjectRecord = {
   id: string;
+  projectKey?: string;
   name: string;
   savedAt: number;
   photos: VideoPhotoRecord[];

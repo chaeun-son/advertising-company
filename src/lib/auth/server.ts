@@ -95,9 +95,16 @@ export const authConfigured =
 // it derives the origin per-request from the (proxied) host, validated against the
 // preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
 // the broker's preview client accepts.
+function listedOrigins(key: string): string[] {
+  return (env(key) ?? "")
+    .split(/[\s,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 const explicitBaseURL = env("BETTER_AUTH_URL");
 const deployOrigins = [
-  "https://studio.chaeun-makearoad.com",
+  ...listedOrigins("AUTH_TRUSTED_ORIGINS"),
   env("VERCEL_PROJECT_PRODUCTION_URL") ? `https://${env("VERCEL_PROJECT_PRODUCTION_URL")}` : "",
   env("VERCEL_URL") ? `https://${env("VERCEL_URL")}` : "",
 ].filter((origin): origin is string => Boolean(origin));

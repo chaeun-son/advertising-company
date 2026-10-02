@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BookOpen, Clapperboard, ClipboardList, LayoutGrid, PenTool, Plus, Settings2, Users } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { BrandMark } from "@/components/brand-mark";
+import { BRAND, PRODUCT_NAME } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/input";
 import { signOut } from "@/lib/auth/client";
@@ -24,11 +24,9 @@ const NAV = [
 export function AppShell({
   children,
   staff,
-  companyName,
 }: {
   children: ReactNode;
   staff: Staff[];
-  companyName: string;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const wide = pathname.startsWith("/studio") || pathname.startsWith("/video");
@@ -51,16 +49,8 @@ export function AppShell({
 
       <header className="no-print sticky top-0 z-30 border-b border-border/80 bg-surface/90 backdrop-blur-md">
         <div className="mx-auto flex min-h-14 max-w-[88rem] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 md:min-h-16 md:px-6">
-          <Link to="/" className="flex min-w-0 items-center gap-2">
-            <BrandMark className="size-8 text-primary" />
-            <span className="min-w-0">
-              <span className="block font-display text-base font-bold tracking-tight md:text-lg">
-                애드스마일
-              </span>
-              <span className="hidden truncate text-[11px] text-muted sm:block">
-                {companyName} 디자인팀
-              </span>
-            </span>
+          <Link to="/" className="flex min-w-0 items-center" aria-label={PRODUCT_NAME}>
+            <img src={BRAND.header} alt={PRODUCT_NAME} className="h-11 w-auto max-w-[16rem] object-contain object-left sm:h-14 sm:max-w-[22rem]" />
           </Link>
           <nav className="hidden items-center gap-0.5 lg:flex">
             {NAV.map((item) => {

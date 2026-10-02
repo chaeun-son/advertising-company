@@ -23,11 +23,56 @@ import {
 import type { CompanyProfile, ProductUnit } from "@/lib/types";
 import { formatYearMonth } from "@/lib/format";
 import { won } from "@/lib/pricing";
+import { formatBytes as formatMediaBytes } from "@/lib/video/music-plan";
+import { listUserMusic } from "@/lib/video/music-client";
 import { Trash2 } from "lucide-react";
+import { PRODUCT_NAME, brandFileSlug, customerBrandLogo } from "@/lib/brand";
 
 export const Route = createFileRoute("/_app/settings")({
   component: SettingsPage,
 });
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("로고를 읽지 못했습니다."));
+    img.src = src;
+  });
+}
+
+async function readCompanyLogo(file: File) {
+  if (!file.type.startsWith("image/")) throw new Error("이미지 파일만 올릴 수 있습니다.");
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("로고를 읽지 못했습니다."));
+    reader.readAsDataURL(file);
+  });
+  if (dataUrl.length <= 150_000 && !file.type.includes("svg")) return dataUrl;
+  if (file.type.includes("svg")) {
+    if (dataUrl.length > 150_000) throw new Error("로고는 150KB 이하로 올려 주세요.");
+    return dataUrl;
+  }
+  const img = await loadImage(dataUrl);
+  let width = img.naturalWidth || 640;
+  let height = img.naturalHeight || 640;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const max = attempt === 0 ? 640 : Math.round(Math.max(width, height) * 0.75);
+    const scale = Math.min(1, max / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) break;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const next = canvas.toDataURL("image/png");
+    if (next.length <= 150_000) return next;
+    width = canvas.width;
+    height = canvas.height;
+  }
+  throw new Error("로고는 150KB 이하로 올려 주세요.");
+}
 
 function SettingsPage() {
   const queryClient = useQueryClient();
@@ -126,7 +171,7 @@ function SettingsPage() {
       const stamp = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
       const a = document.createElement("a");
       a.href = url;
-      a.download = `adsmile-backup-${stamp}.json`;
+      a.download = `${brandFileSlug()}-backup-${stamp}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("백업 파일을 저장했습니다.");
@@ -153,6 +198,11 @@ function SettingsPage() {
     queryKey: ["storage-stats"],
     queryFn: () => getStorageStats(),
   });
+  const mediaQ = useQuery({
+    queryKey: ["media-storage"],
+    queryFn: () => listUserMusic(),
+    retry: false,
+  });
 
   const snapshotMut = useMutation({
     mutationFn: () => saveMonthlyArchive(),
@@ -170,7 +220,7 @@ function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `adsmile-${res.month}.json`;
+      a.download = `${brandFileSlug()}-${res.month}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success(`${formatYearMonth(res.month)} 파일을 저장했습니다.`);
@@ -189,8 +239,20 @@ function SettingsPage() {
 
       <InstallApp />
 
+      {mediaQ.data ? (
+        <section className="rounded-[var(--radius-lg)] bg-surface p-4 shadow-[var(--shadow-border)] md:p-5">
+          <h2 className="font-display text-base font-semibold">내 저장공간</h2>
+          <p className="mt-2 text-sm text-muted">
+            음악 {mediaQ.data.storage.musicCount}개 · 사용중 {formatMediaBytes(mediaQ.data.storage.musicBytes)} / {formatMediaBytes(mediaQ.data.storage.quotaBytes)}
+            {mediaQ.data.storage.totalBytes > mediaQ.data.storage.musicBytes ? ` · 전체 ${formatMediaBytes(mediaQ.data.storage.totalBytes)}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-muted">음악 파일은 계정별로 보관됩니다. 사진·영상도 같은 저장공간 합산에 올릴 수 있습니다.</p>
+        </section>
+      ) : null}
+
       <section className="rounded-[var(--radius-lg)] bg-surface p-4 shadow-[var(--shadow-border)] md:p-5">
         <h2 className="font-display text-base font-semibold">자사 정보</h2>
+        <p className="mt-1 text-xs text-muted">견적서와 명세서에 찍히는 회사 프로필입니다. 프로그램 이름은 {PRODUCT_NAME}이고, 여기 상호·로고와는 따로입니다. 비워 두면 납품 문서에 로고를 넣지 않습니다.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Field label="상호" value={company.name} onChange={(v) => setCompany({ ...company, name: v })} />
           <Field label="대표" value={company.ownerName} onChange={(v) => setCompany({ ...company, ownerName: v })} />
@@ -198,12 +260,62 @@ function SettingsPage() {
           <Field label="전화" value={company.phone} onChange={(v) => setCompany({ ...company, phone: v })} />
           <Field label="팩스" value={company.fax} onChange={(v) => setCompany({ ...company, fax: v })} />
           <Field label="이메일" value={company.email} onChange={(v) => setCompany({ ...company, email: v })} />
+          <Field label="홈페이지" value={company.website ?? ""} onChange={(v) => setCompany({ ...company, website: v })} />
           <Field label="직인 문구" value={company.sealLabel} onChange={(v) => setCompany({ ...company, sealLabel: v })} />
           <Field label="업태" value={company.bizType} onChange={(v) => setCompany({ ...company, bizType: v })} />
           <Field label="종목" value={company.bizItem} onChange={(v) => setCompany({ ...company, bizItem: v })} />
           <div className="sm:col-span-2">
             <Label>주소</Label>
             <Input value={company.address} onChange={(e) => setCompany({ ...company, address: e.target.value })} />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>회사 로고</Label>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              {customerBrandLogo(company.logoUrl) ? (
+                <img src={company.logoUrl} alt="" className="h-12 w-auto max-w-[10rem] object-contain" />
+              ) : (
+                <span className="text-xs text-muted">로고 없음. 고객 문서에 프로그램 로고는 들어가지 않습니다.</span>
+              )}
+              <label className="inline-flex h-10 cursor-pointer items-center rounded-full bg-elevated px-3 text-sm shadow-[var(--shadow-border)]">
+                로고 올리기
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file || !company) return;
+                    void readCompanyLogo(file)
+                      .then((logoUrl) => setCompany({ ...company, logoUrl }))
+                      .catch((err: unknown) => toast.error(err instanceof Error ? err.message : "로고를 읽지 못했습니다."));
+                  }}
+                />
+              </label>
+              {company.logoUrl ? (
+                <button type="button" className="text-sm text-muted underline" onClick={() => setCompany({ ...company, logoUrl: "" })}>
+                  로고 빼기
+                </button>
+              ) : null}
+            </div>
+          </div>
+          <div>
+            <Label>대표 색상</Label>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="color"
+                aria-label="대표 색상"
+                value={/^#[0-9a-fA-F]{6}$/.test(company.brandColor ?? "") ? company.brandColor : "#3B2F23"}
+                onChange={(e) => setCompany({ ...company, brandColor: e.target.value })}
+                className="h-10 w-14 cursor-pointer rounded border border-border bg-transparent p-1"
+              />
+              <span className="text-sm tabular-nums text-muted">{company.brandColor || "기본색"}</span>
+              {company.brandColor ? (
+                <button type="button" className="text-sm text-muted underline" onClick={() => setCompany({ ...company, brandColor: "" })}>
+                  비우기
+                </button>
+              ) : null}
+            </div>
           </div>
           <Field label="은행" value={company.bankName} onChange={(v) => setCompany({ ...company, bankName: v })} />
           <Field label="계좌" value={company.bankAccount} onChange={(v) => setCompany({ ...company, bankAccount: v })} />

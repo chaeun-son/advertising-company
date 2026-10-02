@@ -1,9 +1,40 @@
+import { customerBrandLogo } from "../brand.ts";
+
 export type Look = "none" | "warm" | "cool" | "mono" | "vintage" | "vivid";
 export type Motion = "none" | "zoom-in" | "zoom-out" | "pan-left" | "pan-right" | "slow-zoom" | "face-focus";
-export type Transition = "none" | "fade" | "slide" | "black";
+export type Transition = "none" | "fade" | "slide" | "black" | "white" | "push" | "zoom" | "blur" | "wipe";
 export type TextMotion = "none" | "fade" | "pop" | "rise" | "type";
 export type TextStyle = "bar" | "outline" | "shadow" | "plain" | "body" | "year" | "ending";
-export type FrameMode = "blur" | "contain" | "cover";
+export type FrameMode = "blur" | "cover" | "contain";
+export type TitleStyle = "luxury" | "emotion" | "simple" | "grand";
+export type TitleMotion = "fade" | "slow-zoom" | "slide-up";
+
+export const TITLE_STYLE_BG: Record<TitleStyle, string> = {
+  luxury: "#1a140f",
+  emotion: "#241418",
+  simple: "#101114",
+  grand: "#0b1020",
+};
+
+export type TitleCard = {
+  role: "intro" | "ending";
+  style: TitleStyle;
+  motion: TitleMotion;
+  main: string;
+  sub: string;
+  date: string;
+  thanks: string;
+  org: string;
+  bg: string;
+  seconds: number;
+  logo?: string;
+  bgImage?: string;
+};
+
+/** 편집 프로그램 로고는 고객 영상에 넣지 않는다. 고객이 올린 로고만 통과시킨다. */
+export function customerLogo(url?: string) {
+  return customerBrandLogo(url);
+}
 
 export const FX = {
   look: "none" as Look,
@@ -57,6 +88,10 @@ export type PlannedClip = {
   textMotion: TextMotion;
   textStyle: TextStyle;
   frame?: FrameMode;
+  title?: TitleCard;
+  audioOn?: boolean;
+  sourceDuration?: number;
+  endingCut?: boolean;
 };
 
 /** 사진마다 화면을 채우고, 자막이 있으면 같은 시간에 아래에 올린다. */

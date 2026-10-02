@@ -1,4 +1,5 @@
 import { seoulMonth, shiftMonth } from "@/lib/format";
+import { isProgramBrandAsset } from "@/lib/brand";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
@@ -55,6 +56,13 @@ function boolVal(v: unknown, fallback = false): boolean {
 function strVal(v: unknown, fallback = ""): string {
   if (v == null) return fallback;
   return String(v);
+}
+
+function companyLogoVal(v: unknown) {
+  const url = strVal(v).trim();
+  if (!url || isProgramBrandAsset(url) || url.length > 160_000) return "";
+  if (!url.startsWith("data:image/") && !/^https?:\/\//i.test(url)) return "";
+  return url;
 }
 
 function tsVal(v: unknown): string | null {
@@ -286,11 +294,12 @@ export const restoreShopBackup = createServerFn({ method: "POST" })
         `insert into company_profile (
            id, name, owner_name, biz_no, phone, fax, address, email,
            bank_name, bank_account, bank_holder, seal_label, vat_included,
-           rush_rate, quote_valid_days, biz_type, biz_item, invite_code
-         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+           rush_rate, quote_valid_days, biz_type, biz_item, invite_code,
+           website, brand_color, logo_url
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
         [
           intVal(pick(row, "id"), 1),
-          strVal(pick(row, "name"), "주식회사 애드스마일"),
+          strVal(pick(row, "name"), ""),
           strVal(pick(row, "owner_name")),
           strVal(pick(row, "biz_no")),
           strVal(pick(row, "phone")),
@@ -307,6 +316,9 @@ export const restoreShopBackup = createServerFn({ method: "POST" })
           strVal(pick(row, "biz_type")),
           strVal(pick(row, "biz_item")),
           strVal(pick(row, "invite_code"), "adsmile"),
+          strVal(pick(row, "website")),
+          strVal(pick(row, "brand_color")),
+          companyLogoVal(pick(row, "logo_url")),
         ],
       );
     }

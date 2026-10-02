@@ -186,7 +186,7 @@ function ProofFigure() {
     <div className="mx-auto flex max-w-xl flex-col items-center gap-2 sm:flex-row sm:items-stretch">
       <div className="w-full rounded-md border border-fg bg-surface p-4 sm:w-1/2">
         <p className="text-center text-[13px] font-bold">출력용</p>
-        <p className="mt-3 text-center font-display text-lg font-bold">애드스마일</p>
+        <p className="mt-3 text-center font-display text-lg font-bold">본문 글자</p>
         <div className="mx-auto mt-3 space-y-2">
           <div className="h-2.5 rounded-sm bg-border" />
           <div className="h-2.5 w-4/5 rounded-sm bg-border" />
@@ -198,7 +198,7 @@ function ProofFigure() {
       <div className="w-full rounded-md border border-fg bg-surface p-4 sm:w-1/2">
         <p className="text-center text-[13px] font-bold">건축용</p>
         <p className="mt-3 rounded bg-[#ffe566] py-1 text-center text-lg" style={{ fontFamily: "serif" }}>
-          애드스마일
+          본문 글자
         </p>
         <div className="mx-auto mt-3 space-y-2">
           <div className="h-2.5 rounded-sm bg-border" />

@@ -1,17 +1,3 @@
-export function AdsmileWordmark({ className = "" }: { className?: string }) {
-  return (
-    <div className={`flex items-center gap-2.5 text-fg ${className}`}>
-      <img src="/adsmile-mark.png" alt="" className="size-12 object-contain" />
-      <span className="leading-none">
-        <span className="block font-display text-[20px] font-black tracking-tight">애드스마일</span>
-        <span className="mt-0.5 block text-[8px] font-semibold tracking-[0.14em] text-fg/80">
-          SMILE ADVERTISING AGENCY
-        </span>
-      </span>
-    </div>
-  );
-}
-
 function finder(x: number, y: number) {
   const ring = x === 0 || y === 0 || x === 6 || y === 6;
   const core = x >= 2 && x <= 4 && y >= 2 && y <= 4;

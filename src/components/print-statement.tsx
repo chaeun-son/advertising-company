@@ -1,4 +1,5 @@
-import { AdsmileWordmark, DocQr } from "@/components/adsmile-logo";
+import { DocQr } from "@/components/adsmile-logo";
+import { customerBrandLogo } from "@/lib/brand";
 import { unpackOrderNotes, vatBreakdown, wonNum } from "@/lib/pricing";
 import type { DocumentRecord } from "@/lib/types";
 
@@ -25,6 +26,7 @@ export function PrintStatement({ doc }: { doc: DocumentRecord }) {
   const lineTaxes = payload.items.map((item) => vatBreakdown(item.amount, payload.vatIncluded));
   const empty = Math.max(0, rows - payload.items.length);
   const serial = String(doc.id).padStart(4, "0");
+  const logo = customerBrandLogo(company.logoUrl);
 
   function itemName(item: (typeof payload.items)[0]) {
     const spec = item.spec && item.spec !== "—" ? item.spec.replace("×", "*").replace("cm", "") : "";
@@ -37,7 +39,10 @@ export function PrintStatement({ doc }: { doc: DocumentRecord }) {
     <article className="hantex mx-auto w-full max-w-[210mm] bg-elevated px-5 py-4 text-[12px] text-fg shadow-[var(--shadow-border)] print:max-w-none print:px-0 print:py-0 print:shadow-none">
       <div className="flex items-start justify-between gap-3">
         <p className="text-[10px] text-subtle">(한텍스 B형 서식)</p>
-        <AdsmileWordmark />
+        <div className="text-right">
+          {logo ? <img src={logo} alt="" className="ml-auto mb-1 h-8 w-auto max-w-[7rem] object-contain" /> : null}
+          <p className="font-display text-[15px] font-black leading-tight">{company.name}</p>
+        </div>
       </div>
 
       <div className="mt-1 grid grid-cols-[auto_minmax(0,1fr)_11rem] items-stretch border-2 border-fg">
@@ -69,12 +74,7 @@ export function PrintStatement({ doc }: { doc: DocumentRecord }) {
             <div className="border-b border-r border-fg px-1 py-1 text-center">성 명</div>
             <div className="relative border-b border-fg px-1.5 py-1">
               {company.ownerName}
-              <img
-                src="/adsmile-mark.png"
-                alt=""
-                className="absolute -right-1 -top-1 size-10 object-contain opacity-90 print:opacity-100"
-              />
-              <span className="sr-only">(인)</span>
+              {company.sealLabel ? <span className="ml-1 text-[10px] text-muted">({company.sealLabel})</span> : null}
             </div>
             <div className="border-b border-r border-fg px-1 py-1 text-center">주 소</div>
             <div className="col-span-3 border-b border-fg px-1.5 py-1 leading-snug">{company.address || " "}</div>

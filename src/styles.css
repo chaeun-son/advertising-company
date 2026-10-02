@@ -2,37 +2,37 @@
 @import "tw-animate-css";
 
 @theme {
-  --font-sans: "IBM Plex Sans KR", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Noto Sans KR", "IBM Plex Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Pretendard Variable", Pretendard, "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Pretendard Variable", Pretendard, "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --color-bg: #f6efe4;
-  --color-surface: #fffaf3;
+  --color-bg: #f7ead7;
+  --color-surface: #fff9f3;
   --color-elevated: #ffffff;
-  --color-fg: #1c150e;
-  --color-muted: #6e6256;
-  --color-subtle: #94877a;
-  --color-border: #ead9c4;
-  --color-primary: #f08c00;
-  --color-primary-fg: #fffdf8;
-  --color-accent: #c46e00;
+  --color-fg: #3b2f23;
+  --color-muted: #806447;
+  --color-subtle: #8a7764;
+  --color-border: #e6d3bc;
+  --color-primary: #3b2f23;
+  --color-primary-fg: #f7ead7;
+  --color-accent: #d4a04e;
   --color-stamp: #c4452d;
   --color-ok: #2c6a4a;
   --color-warn: #a05a18;
   --color-draft: #2f5a78;
   --color-make: #6b4a28;
-  --color-background: #f5f6fb;
-  --color-foreground: #172033;
-  --color-panel: #ffffff;
+  --color-background: #f7ead7;
+  --color-foreground: #3b2f23;
+  --color-panel: #fff9f3;
   --color-card: #ffffff;
-  --color-muted-foreground: #667085;
-  --color-primary-foreground: #fffdf8;
-  --color-workbench: #eef1f6;
+  --color-muted-foreground: #806447;
+  --color-primary-foreground: #f7ead7;
+  --color-workbench: #f3e6d4;
   --color-bleed: #c4452d;
   --color-safe: #2c6a4a;
-  --color-ring: #f08c00;
-  --color-ai: #6b4a28;
-  --color-ai-foreground: #fffdf8;
+  --color-ring: #d4a04e;
+  --color-ai: #3b2f23;
+  --color-ai-foreground: #f7ead7;
 
   --radius-xs: 4px;
   --radius-sm: 8px;
@@ -59,7 +59,7 @@
     color: var(--color-fg);
     font-family: var(--font-sans);
     background-image:
-      radial-gradient(rgba(240, 140, 0, 0.07) 0.7px, transparent 0.7px);
+      radial-gradient(rgba(59, 47, 35, 0.06) 0.7px, transparent 0.7px);
     background-size: 4px 4px;
   }
 

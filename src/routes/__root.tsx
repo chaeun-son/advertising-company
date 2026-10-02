@@ -4,30 +4,34 @@ import { useState } from "react";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { BRAND, PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/brand";
 import appCss from "../styles.css?url";
-
-const APP_NAME = "애드스마일";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: APP_NAME },
+      { title: PRODUCT_NAME },
       {
         name: "description",
-        content: "(주)애드스마일 디자인팀 직원 작업실",
+        content: `${PRODUCT_NAME} · ${PRODUCT_TAGLINE}`,
       },
-      { name: "theme-color", content: "#F08C00" },
+      { name: "theme-color", content: "#3B2F23" },
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/adsmile-mark.png" },
+      { rel: "icon", href: BRAND.favicon },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: BRAND.pwa192 },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
+      { rel: "apple-touch-icon", href: BRAND.apple },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@500;700;900&display=swap",
+        href: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@500;600;700&display=swap",
       },
     ],
   }),
@@ -59,9 +63,9 @@ function RootDocument() {
               toastOptions={{
                 className: "font-sans",
                 style: {
-                  background: "#fffaf3",
-                  color: "#1c150e",
-                  border: "1px solid #ead9c4",
+                  background: "#fff9f3",
+                  color: "#3b2f23",
+                  border: "1px solid #e6d3bc",
                 },
               }}
             />
