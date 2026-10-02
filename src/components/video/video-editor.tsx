@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { MusicShelf, type MusicPick } from "@/components/video/music-shelf";
 import { ProPanel, ProTools, type ProClip } from "@/components/video/pro-panel";
 import { TitleFields } from "@/components/video/title-fields";
-import { BEATS, DEFAULT_ENDING, DEFAULT_INTRO, TITLE_TEMPLATES, applyMediaOrder, applyTitlePreset, bodyPhotoId, directFilm, filmItemsFromTimeline, filmSummary, fitDurations, holdTargetLength, layoutVisualOrder, lengthGapLabel, musicFadeFor, parseFilmLength, pinVisualOrder, readSavedTemplates, videoDuckSpans, videoPlacementFor, writeSavedTemplates, type BeatId, type SavedTitleTemplate } from "@/lib/video/director";
+import { BEATS, DEFAULT_ENDING, DEFAULT_INTRO, TITLE_TEMPLATES, applyMediaOrder, applyTitlePreset, bodyPhotoId, directFilm, dropInsertIndex, filmItemsFromTimeline, filmSummary, fitDurations, holdTargetLength, layoutVisualOrder, lengthGapLabel, musicFadeFor, parseFilmLength, pinVisualOrder, readSavedTemplates, videoDuckSpans, videoPlacementFor, writeSavedTemplates, type BeatId, type SavedTitleTemplate } from "@/lib/video/director";
 import { bedLevel, EXPORT_SIZES, type ExportFps, type ExportSize } from "@/lib/video/export-presets";
 import { encodeMp4 } from "@/lib/video/mp4-export";
 import { listUserMusic, rememberMusicUses } from "@/lib/video/music-client";
@@ -627,6 +627,33 @@ export function VideoEditor() {
     setClips((cur) => arrangeBody(cur, pinned));
   }
 
+  function moveBy(clipId: string, delta: -1 | 1) {
+    if (photoOrderRef.current === "keep") {
+      toast.message("원본 유지 중에는 순서를 바꾸지 않습니다. 직접 정렬을 누르세요.");
+      return;
+    }
+    const body = bodyClips(clipsRef.current, true);
+    const from = body.findIndex((clip) => clip.id === clipId);
+    const clip = from < 0 ? undefined : body[from];
+    if (!clip) return;
+    if (clip.orderLock) {
+      toast.message("고정된 장면입니다. 고정을 풀고 옮기세요.");
+      return;
+    }
+    const to = from + delta;
+    const target = body[to];
+    if (!target) return;
+    if (target.orderLock) {
+      toast.message("고정된 장면은 그 자리에 남습니다. 고정을 풀고 옮기세요.");
+      return;
+    }
+    const ids = body.map((item) => item.id);
+    const [item] = ids.splice(from, 1);
+    if (!item) return;
+    ids.splice(to, 0, item);
+    commitBodyOrder(ids);
+  }
+
   function choosePhotoOrder(mode: PhotoOrderMode) {
     setPhotoOrder(mode);
     photoOrderRef.current = mode;
@@ -666,10 +693,24 @@ export function VideoEditor() {
     const touch = event.pointerType === "touch";
     let armed = !touch;
     let moved = false;
+    let lastX = originX;
     const timer = touch ? window.setTimeout(() => { armed = true; }, 280) : 0;
     const insertAt = (clientX: number) => {
       const body = bodyClips(clipsRef.current, true);
       return source === "shelf" ? shelfInsert(clientX, clipId) : timelineInsert(clientX, zoomRef.current, body, clipId);
+    };
+    const scroller = () => document.querySelector<HTMLElement>(source === "shelf" ? "[data-shelf-row]" : "[data-timeline-scroll]");
+    let scrolling = 0;
+    const nudgeScroll = () => {
+      const el = scroller();
+      if (el && armed) {
+        const rect = el.getBoundingClientRect();
+        const before = el.scrollLeft;
+        if (lastX > rect.right - 56) el.scrollLeft += 28;
+        else if (lastX < rect.left + 56) el.scrollLeft -= 28;
+        if (el.scrollLeft !== before) setOrderDrag({ id: clipId, insertAt: insertAt(lastX) });
+      }
+      scrolling = window.requestAnimationFrame(nudgeScroll);
     };
     const move = (ev: PointerEvent) => {
       if (!armed) {
@@ -680,6 +721,7 @@ export function VideoEditor() {
         return;
       }
       if (Math.hypot(ev.clientX - originX, ev.clientY - originY) > 4) moved = true;
+      lastX = ev.clientX;
       setOrderDrag({ id: clipId, insertAt: insertAt(ev.clientX) });
     };
     const up = (ev: PointerEvent) => {
@@ -698,11 +740,14 @@ export function VideoEditor() {
       commitBodyOrder(ids);
     };
     const cleanup = () => {
+      window.clearTimeout(timer);
+      window.cancelAnimationFrame(scrolling);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    scrolling = window.requestAnimationFrame(nudgeScroll);
     if (!touch) setOrderDrag({ id: clipId, insertAt: insertAt(event.clientX) });
   }
 
@@ -1711,10 +1756,10 @@ export function VideoEditor() {
               ? "AI 재배치는 감독에게 맡길 때만 사진 순서를 바꿉니다. 영상은 그 뒤에 붙습니다."
               : photoOrder === "keep"
                 ? "업로드한 순서를 유지합니다. 순서를 옮기려면 직접 정렬을 누르세요."
-                : "핸들을 끌어 사진, 영상, 엔딩컷 순서를 바꿉니다. 고정한 장면은 그 자리에 남고, 빼거나 앞뒤에 새로 넣을 수 있습니다."}
+                : "옆 카드 안으로 끌어 넣으면 그 칸과 바뀝니다. 엔딩컷도 한 칸 앞·뒤로 옮길 수 있습니다."}
           </span>
         </div>
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto" data-shelf-row>
           {photos.length === 0 && !clips.some((clip) => clip.kind === "video") ? (
             <p className="py-2 text-[12px] text-[#8a7d74]">JPG, PNG 사진과 MP4, MOV, WEBM 영상을 올리면 여기에 보이고, 타임라인에도 바로 들어갑니다.</p>
           ) : null}
@@ -1748,6 +1793,8 @@ export function VideoEditor() {
                 )}
                 <div className="mt-1 flex flex-wrap gap-1">
                   <button type="button" onClick={() => toggleOrderLock(clip.id)} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${clip.orderLock ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{clip.orderLock ? "고정됨" : "고정"}</button>
+                  <button type="button" onClick={() => moveBy(clip.id, -1)} className="rounded bg-[#efe8df] px-1.5 py-0.5 text-[10px] font-bold">한 칸 앞</button>
+                  <button type="button" onClick={() => moveBy(clip.id, 1)} className="rounded bg-[#efe8df] px-1.5 py-0.5 text-[10px] font-bold">한 칸 뒤</button>
                   <button type="button" onClick={() => remove(clip.id)} className="rounded bg-[#efe8df] px-1.5 py-0.5 text-[10px] font-bold">삭제</button>
                   <button type="button" onClick={() => pickInsert(clip.id, "before")} className="rounded bg-[#efe8df] px-1.5 py-0.5 text-[10px] font-bold">앞에 추가</button>
                   <button type="button" onClick={() => pickInsert(clip.id, "after")} className="rounded bg-[#efe8df] px-1.5 py-0.5 text-[10px] font-bold">뒤에 추가</button>
@@ -1887,6 +1934,8 @@ export function VideoEditor() {
               {(selectedClip.kind === "image" || selectedClip.kind === "video") && !selectedClip.title && !selectedClip.pip ? (
                 <div className="flex flex-wrap gap-1">
                   <button type="button" onClick={() => toggleOrderLock(selectedClip.id)} className={`rounded px-2 py-1 text-[11px] font-bold ${selectedClip.orderLock ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{selectedClip.orderLock ? "자리 고정됨" : "이 자리 고정"}</button>
+                  <button type="button" onClick={() => moveBy(selectedClip.id, -1)} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">한 칸 앞</button>
+                  <button type="button" onClick={() => moveBy(selectedClip.id, 1)} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">한 칸 뒤</button>
                   <button type="button" onClick={() => remove(selectedClip.id)} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">삭제</button>
                   <button type="button" onClick={() => pickInsert(selectedClip.id, "before")} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">앞에 추가</button>
                   <button type="button" onClick={() => pickInsert(selectedClip.id, "after")} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">뒤에 추가</button>
@@ -2008,7 +2057,7 @@ export function VideoEditor() {
           </span>
           <input type="range" min={36} max={140} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="타임라인 확대" />
         </div>
-        <div className="h-[168px] overflow-auto px-3 pb-3" onClick={(e) => {
+        <div className="h-[168px] overflow-auto px-3 pb-3" data-timeline-scroll onClick={(e) => {
           const row = (e.target as HTMLElement).closest("[data-ruler]") as HTMLElement | null;
           if (!row) return;
           const rect = row.getBoundingClientRect();
@@ -2470,24 +2519,25 @@ function bodyClips(list: Clip[], withEnding = false) {
 }
 
 function shelfInsert(clientX: number, excludeId: string) {
-  const cards = [...document.querySelectorAll<HTMLElement>("[data-shelf-card]")].filter((card) => card.dataset.shelfId !== excludeId);
-  for (let index = 0; index < cards.length; index += 1) {
-    const rect = cards[index]!.getBoundingClientRect();
-    if (clientX < rect.left + rect.width / 2) return index;
-  }
-  return cards.length;
+  const all = [...document.querySelectorAll<HTMLElement>("[data-shelf-card]")];
+  const from = all.findIndex((card) => card.dataset.shelfId === excludeId);
+  const cards = all.filter((card) => card.dataset.shelfId !== excludeId);
+  return dropInsertIndex(cards.map((card) => {
+    const rect = card.getBoundingClientRect();
+    return { left: rect.left, right: rect.right };
+  }), clientX, from);
 }
 
 function timelineInsert(clientX: number, zoom: number, body: Clip[], excludeId: string) {
   const row = document.querySelector("[data-ruler]");
   if (!row) return 0;
   const x = clientX - row.getBoundingClientRect().left;
+  const from = body.findIndex((clip) => clip.id === excludeId);
   const others = body.filter((clip) => clip.id !== excludeId);
-  for (let index = 0; index < others.length; index += 1) {
-    const clip = others[index]!;
-    if (x < (clip.start + clip.duration / 2) * zoom) return index;
-  }
-  return others.length;
+  return dropInsertIndex(others.map((clip) => ({
+    left: clip.start * zoom,
+    right: (clip.start + clip.duration) * zoom,
+  })), x, from);
 }
 
 function timelineMarkerLeft(body: Clip[], drag: { id: string; insertAt: number }, zoom: number) {

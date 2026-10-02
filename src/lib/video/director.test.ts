@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyMediaOrder, applyTitlePreset, assignStory, bodyPhotoId, captionKind, directClips, directFilm, filmItemsFromTimeline, filmSummary, fitDurations, holdTargetLength, keepUserOrder, layoutVisualOrder, lengthGapLabel, musicFadeFor, parseFilmLength, pickMotion, pickTransition, pinVisualOrder, splitSeconds, videoDuckSpans, videoPlacementFor, wrapCaption } from "./director.ts";
+import { applyMediaOrder, applyTitlePreset, assignStory, bodyPhotoId, captionKind, directClips, directFilm, dropInsertIndex, filmItemsFromTimeline, filmSummary, fitDurations, holdTargetLength, keepUserOrder, layoutVisualOrder, lengthGapLabel, musicFadeFor, parseFilmLength, pickMotion, pickTransition, pinVisualOrder, splitSeconds, videoDuckSpans, videoPlacementFor, wrapCaption } from "./director.ts";
 import { heardLevel } from "./export-presets.ts";
 import { customerLogo } from "./slideshow.ts";
 import { titleMotionAt } from "./title-paint.ts";
@@ -441,4 +441,13 @@ test("a locked scene stays in its slot when the others are reordered", () => {
   assert.deepEqual(pinned, ["p", "v", "cut"]);
   const moved = pinVisualOrder(["p", "v", "cut"], ["v", "p", "cut"], new Set(["cut"]));
   assert.deepEqual(moved, ["v", "p", "cut"]);
+});
+
+test("the clip before the ending cut swaps as soon as the pointer enters that card", () => {
+  const photo = { left: 0, right: 160 };
+  const video = { left: 168, right: 328 };
+  const cut = { left: 336, right: 496 };
+  assert.equal(dropInsertIndex([photo, cut], cut.left + 20, 1), 2);
+  assert.equal(dropInsertIndex([photo, cut], cut.left - 4, 1), 1);
+  assert.equal(dropInsertIndex([photo, video], video.right - 20, 2), 1);
 });

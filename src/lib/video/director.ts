@@ -766,6 +766,24 @@ export function pinVisualOrder(previous: readonly string[], proposed: readonly s
   return result;
 }
 
+/**
+ * 끌어 놓은 자리.
+ * edges는 끌고 있는 장면을 뺀 칸이고, fromIndex는 빼기 전 전체 순서에서의 자리다.
+ * 바로 옆 장면은 그 안으로 조금만 들어가도 서로 바꾸고, 더 먼 장면은 가운데를 넘을 때 끼워 넣는다.
+ */
+export function dropInsertIndex(edges: readonly { left: number; right: number }[], pointer: number, fromIndex: number): number {
+  for (let index = 0; index < edges.length; index += 1) {
+    const edge = edges[index]!;
+    const width = Math.max(1, edge.right - edge.left);
+    const slip = Math.min(12, width * 0.35);
+    const next = index === fromIndex;
+    const previous = index === fromIndex - 1;
+    const threshold = next ? edge.left + slip : previous ? edge.right - slip : edge.left + width / 2;
+    if (pointer < threshold) return index;
+  }
+  return edges.length;
+}
+
 function packChain<T extends OrderedClip>(clips: T[], seq: T[]): T[] {
   const intro = clips.find((clip) => clip.title?.role === "intro");
   const ending = clips.find((clip) => clip.title?.role === "ending");
