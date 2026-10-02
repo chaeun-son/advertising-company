@@ -183,6 +183,7 @@ export function VideoEditor() {
   const [past, setPast] = useState<EditSnapshot[]>([]);
   const [future, setFuture] = useState<EditSnapshot[]>([]);
   const [safeOn, setSafeOn] = useState(false);
+  const [desk, setDesk] = useState<"ai" | "media" | "music" | "look">("media");
   const [userPresets, setUserPresets] = useState<UserPreset[]>([]);
   const [extraFonts, setExtraFonts] = useState<FontChoice[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -1551,7 +1552,18 @@ export function VideoEditor() {
   }, [duration]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#1c150e] text-[#fffaf3]">
+    <div className="flex h-full min-h-0 flex-col bg-[#1c150e] text-[#fffaf3] md:flex-row">
+      <nav className="flex shrink-0 flex-row overflow-x-auto bg-[#292725] py-1 text-[#c9beb5] md:w-16 md:flex-col md:py-2" aria-label="영상 도구">
+        {([
+          ["media", "미디어"],
+          ["ai", "AI 감독"],
+          ["music", "음악"],
+          ["look", "효과"],
+        ] as const).map(([id, label]) => (
+          <button key={id} type="button" onClick={() => { setDesk(id); if (id === "ai") setDirectorOpen(true); }} className={`mx-1 mb-1 flex h-14 flex-col items-center justify-center rounded-lg px-1 text-[10px] leading-tight ${desk === id ? "bg-[#fff9ef] font-extrabold text-[#422b1d]" : "hover:bg-[#3a2b23]"}`}>{label}</button>
+        ))}
+      </nav>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2">
         <div className="mr-2 flex items-center gap-2">
           <Clapperboard className="size-4 text-[#D4A04E]" />
@@ -1568,7 +1580,7 @@ export function VideoEditor() {
         <button type="button" onClick={makeFromPhotos} className="inline-flex h-8 items-center gap-1 rounded-md bg-white px-3 text-[12px] font-bold text-[#1c150e]">
           <ImagePlus className="size-3.5" /> 영상 만들기
         </button>
-        <button type="button" onClick={() => { setDirectorOpen(true); void runDirector(); }} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#fffaf3] px-3 text-[12px] font-bold text-[#1c150e]">감독에게 맡기기</button>
+        <button type="button" onClick={() => { setDesk("ai"); setDirectorOpen(true); void runDirector(); }} className="inline-flex h-8 items-center gap-1 rounded-md bg-[#fffaf3] px-3 text-[12px] font-bold text-[#1c150e]">감독에게 맡기기</button>
         <Tool onClick={undoEdit}><Undo2 className="size-3.5" /> 취소</Tool>
         <Tool onClick={redoEdit}><Redo2 className="size-3.5" /> 다시</Tool>
         <Tool onClick={addText}><Type className="size-3.5" /> 글자</Tool>
@@ -1631,7 +1643,7 @@ export function VideoEditor() {
           ))}
         </div>
       ) : null}
-      <div className="border-b border-white/10 px-3 py-2">
+      <div className={desk === "media" ? "border-b border-white/10 px-3 py-2" : "hidden"}>
         <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[12px]">
           <span className="font-bold text-white/50">순서</span>
           {([["keep", "원본 유지"], ["manual", "직접 정렬"], ["ai", "AI 재배치"]] as const).map(([value, label]) => (
@@ -1684,6 +1696,7 @@ export function VideoEditor() {
           })}
         </div>
       </div>
+      <div className={desk === "music" ? "" : "hidden"}>
       <MusicShelf
         canReplace={selectedClip?.kind === "audio"}
         selectedAudio={selectedClip?.kind === "audio" ? {
@@ -1700,7 +1713,8 @@ export function VideoEditor() {
         onTracks={setUserBeds}
         onPatch={(partial) => { if (selectedClip?.kind === "audio") patch(selectedClip.id, partial); }}
       />
-      {directorOpen ? (
+      </div>
+      {desk === "ai" ? (
         <div className="max-h-[46vh] overflow-y-auto border-b border-white/10 px-3 py-2 text-[12px]">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold text-white/60">길이</span>
@@ -1723,7 +1737,7 @@ export function VideoEditor() {
             <button type="button" onClick={() => setEndingCutOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingCutOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>엔딩컷 {endingCutOn ? "켜짐" : "꺼짐"}</button>
             <button type="button" onClick={() => setEndingOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>엔딩 타이틀 {endingOn ? "켜짐" : "꺼짐"}</button>
             <button type="button" onClick={() => void runDirector()} className="rounded-md bg-white px-2 py-1 font-bold text-[#1c150e]">이 구성으로 만들기</button>
-            <button type="button" onClick={() => setDirectorOpen(false)} className="rounded-md px-2 py-1 text-white/50">접기</button>
+            <button type="button" onClick={() => { setDirectorOpen(false); setDesk("media"); }} className="rounded-md px-2 py-1 text-white/50">접기</button>
           </div>
           <p className="mt-2 text-[11px] text-white/55">
             {planPreview.length
@@ -1949,6 +1963,7 @@ export function VideoEditor() {
             <div className="pointer-events-none absolute bottom-0 top-0 w-px bg-[#D4A04E]" style={{ left: time * zoom }} />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

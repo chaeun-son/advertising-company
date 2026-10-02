@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BookOpen, Clapperboard, ClipboardList, LayoutGrid, PenTool, Plus, Settings2, Users } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { BRAND, PRODUCT_NAME } from "@/lib/brand";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/input";
 import { signOut } from "@/lib/auth/client";
@@ -13,9 +13,9 @@ import type { Staff } from "@/lib/types";
 
 const NAV = [
   { to: "/", label: "작업현황", icon: LayoutGrid, exact: true },
-  { to: "/orders", label: "주문", icon: ClipboardList, exact: false },
+  { to: "/orders", label: "주문관리", icon: ClipboardList, exact: false },
   { to: "/studio", label: "편집실", icon: PenTool, exact: false },
-  { to: "/video", label: "영상", icon: Clapperboard, exact: false },
+  { to: "/video", label: "영상 편집", icon: Clapperboard, exact: false },
   { to: "/clients", label: "거래처", icon: Users, exact: false },
   { to: "/manual", label: "매뉴얼", icon: BookOpen, exact: false },
   { to: "/settings", label: "설정", icon: Settings2, exact: false },
@@ -44,13 +44,19 @@ export function AppShell({
   }, [hydrated, name, staff, setName]);
 
   return (
-    <div className="min-h-dvh bg-bg text-fg">
-      <div className="pointer-events-none fixed inset-y-0 left-0 z-20 hidden w-1.5 bg-primary md:block" />
-
-      <header className="no-print sticky top-0 z-30 border-b border-border/80 bg-surface/90 backdrop-blur-md">
-        <div className="mx-auto flex min-h-14 max-w-[88rem] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 md:min-h-16 md:px-6">
-          <Link to="/" className="flex min-w-0 items-center" aria-label={PRODUCT_NAME}>
-            <img src={BRAND.header} alt={PRODUCT_NAME} className="h-11 w-auto max-w-[16rem] object-contain object-left sm:h-14 sm:max-w-[22rem]" />
+    <div className="min-h-dvh bg-[#f4f0ea] text-[#302621]">
+      <header className="no-print sticky top-0 z-30 border-b border-[#ded7ce] bg-[#fffdf9]">
+        <div className="mx-auto flex min-h-16 max-w-[96rem] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 md:px-5">
+          <Link to="/" className="flex min-w-0 items-center gap-2" aria-label={PRODUCT_NAME}>
+            <span className="relative block size-8 rotate-[30deg]" aria-hidden>
+              <span className="absolute left-0.5 top-0.5 h-3 w-5 rounded-sm bg-gradient-to-br from-[#e0b063] to-[#78502d]" />
+              <span className="absolute left-1.5 top-2 h-3 w-5 rounded-sm bg-gradient-to-br from-[#9b6b3d] to-[#3b2517]" />
+              <span className="absolute left-0.5 top-4 h-3 w-5 rounded-sm bg-gradient-to-br from-[#d5a75f] to-[#7f5631]" />
+            </span>
+            <span className="leading-none">
+              <span className="block font-serif text-[15px] tracking-[0.08em]">CRESORA</span>
+              <span className="mt-1 block text-[8px] font-bold tracking-[0.28em] text-[#a1713d]">STUDIO</span>
+            </span>
           </Link>
           <nav className="hidden items-center gap-0.5 lg:flex">
             {NAV.map((item) => {
@@ -60,8 +66,8 @@ export function AppShell({
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "rounded-full px-3 py-1.5 text-sm transition-colors duration-150",
-                    active ? "bg-fg text-primary-fg shadow-[var(--shadow-border)]" : "text-muted hover:bg-surface hover:text-fg",
+                    "rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors",
+                    active ? "bg-[#362319] text-[#fffaf2]" : "text-[#756a62] hover:bg-[#eee9e2]",
                   )}
                 >
                   {item.label}
@@ -69,13 +75,12 @@ export function AppShell({
               );
             })}
           </nav>
-          {/* Grok "Created with Grok" 배지가 가운데에 떠서, 메뉴·작업자와 겹치지 않게 비워 둡니다. */}
-          <div className="hidden min-h-10 min-w-[13rem] flex-1 lg:block" aria-hidden />
+          <div className="hidden min-h-10 min-w-[8rem] flex-1 lg:block" aria-hidden />
           <div className="ml-auto flex items-center gap-2">
             {staff.length > 0 ? (
               <NativeSelect
                 aria-label="현재 작업자"
-                className="h-10 w-[8.8rem] text-[13px] md:w-40"
+                className="h-9 w-[8.8rem] border-[#ddd7cf] bg-white text-[13px] md:w-40"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               >
@@ -87,18 +92,13 @@ export function AppShell({
               </NativeSelect>
             ) : null}
             <CompactSignOut />
-            <Button asChild size="icon" variant="ghost" className="hidden sm:inline-flex">
-              <Link to="/settings" aria-label="설정">
-                <Settings2 />
-              </Link>
-            </Button>
-            <Button asChild size="sm" className="hidden sm:inline-flex">
+            <Button asChild size="sm" className="hidden bg-[#362319] text-[#fffaf2] sm:inline-flex">
               <Link to="/orders/new">
                 <Plus />
                 새 주문
               </Link>
             </Button>
-            <Button asChild size="icon" className="sm:hidden">
+            <Button asChild size="icon" className="bg-[#362319] text-[#fffaf2] sm:hidden">
               <Link to="/orders/new" aria-label="새 주문">
                 <Plus />
               </Link>

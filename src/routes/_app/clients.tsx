@@ -8,7 +8,6 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient, deleteClient, listClients, updateClient } from "@/lib/server/api";
 import { formatDate } from "@/lib/format";
-import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/clients")({
   component: ClientsPage,
@@ -43,6 +42,7 @@ function ClientsPage() {
   const queryClient = useQueryClient();
   const { data, isPending } = useQuery({ queryKey: ["clients"], queryFn: () => listClients() });
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>(empty);
 
   const save = useMutation({
@@ -116,8 +116,8 @@ function ClientsPage() {
     <div className="space-y-5">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-[13px] text-muted">상호만 적어도 됩니다</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">거래처</h1>
+          <p className="text-[11px] font-extrabold tracking-[0.16em] text-[#aa7b41]">CLIENT RELATIONSHIP</p>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight">거래처 관리</h1>
         </div>
         <Button
           onClick={() => {
@@ -129,60 +129,44 @@ function ClientsPage() {
         </Button>
       </header>
 
-      <div className="overflow-hidden rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-border)]">
+      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="거래처명, 담당자, 연락처, 이메일 검색" className="max-w-md border-[#ddd7cf] bg-white" />
+
+      <div className="overflow-x-auto rounded-2xl bg-[#fffdf9] shadow-[0_0_0_1px_rgba(48,38,33,0.06)]">
         {isPending ? (
-          <p className="p-6 text-sm text-muted">불러오는 중…</p>
+          <p className="p-6 text-sm text-[#756a62]">불러오는 중…</p>
         ) : !data?.length ? (
-          <p className="p-8 text-center text-sm text-muted">거래처가 없습니다.</p>
+          <p className="p-8 text-center text-sm text-[#756a62]">거래처가 없습니다.</p>
         ) : (
-          <ul className="divide-y divide-border">
-            {data.map((c) => (
-              <li key={c.id} className="flex items-stretch">
-                <button
-                  type="button"
-                  className="flex min-w-0 flex-1 flex-col gap-1 px-4 py-3 text-left hover:bg-elevated/80 sm:flex-row sm:items-center sm:justify-between"
-                  onClick={() => {
-                    setDraft({
-                      id: c.id,
-                      name: c.name,
-                      contact: c.contact,
-                      phone: c.phone,
-                      memo: c.memo,
-                      bizNo: c.bizNo,
-                      address: c.address,
-                      email: c.email,
-                      bizType: c.bizType,
-                      bizItem: c.bizItem,
-                    });
-                    setOpen(true);
-                  }}
-                >
-                  <div>
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-[13px] text-muted">
-                      {c.contact || "담당 미기재"}
-                      {c.phone ? ` · ${c.phone}` : ""}
-                    </p>
-                  </div>
-                  <p className="text-[12px] text-subtle">
-                    주문 {c.orderCount}건
-                    {c.lastOrder ? ` · 최근 ${formatDate(c.lastOrder)}` : ""}
-                  </p>
-                </button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="m-1.5 size-10 shrink-0 text-stamp"
-                  aria-label={`${c.name} 삭제`}
-                  disabled={remove.isPending}
-                  onClick={() => confirmRemove(c.id, c.name, c.orderCount)}
-                >
-                  <Trash2 />
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="text-[12px] text-[#756a62]">
+              <tr>
+                <th className="px-4 py-3 font-medium">거래처명</th>
+                <th className="py-3 font-medium">담당자</th>
+                <th className="py-3 font-medium">연락처</th>
+                <th className="py-3 font-medium">이메일</th>
+                <th className="py-3 font-medium">주문</th>
+                <th className="py-3 pr-4 font-medium">최근</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.filter((client) => `${client.name} ${client.contact} ${client.phone} ${client.email} ${client.bizNo}`.toLowerCase().includes(query.toLowerCase())).map((client) => (
+                <tr key={client.id} className="border-t border-[#eee6de]">
+                  <td className="px-4 py-3">
+                    <button type="button" className="text-left font-semibold" onClick={() => {
+                      setDraft({ id: client.id, name: client.name, contact: client.contact, phone: client.phone, memo: client.memo, bizNo: client.bizNo, address: client.address, email: client.email, bizType: client.bizType, bizItem: client.bizItem });
+                      setOpen(true);
+                    }}>{client.name}</button>
+                    <p className="text-[12px] text-[#9a9088]">{client.bizNo || "사업자번호 없음"}</p>
+                  </td>
+                  <td>{client.contact || "—"}</td>
+                  <td>{client.phone || "—"}</td>
+                  <td className="text-[#756a62]">{client.email || "—"}</td>
+                  <td>{client.orderCount}건</td>
+                  <td className="pr-4 text-[#756a62]">{client.lastOrder ? formatDate(client.lastOrder) : "없음"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 

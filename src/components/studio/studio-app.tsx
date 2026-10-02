@@ -21,6 +21,17 @@ const MODES: { id: StudioMode; label: string }[] = [
   { id: "library", label: `자료실 ${folderCount("all")}` },
 ];
 
+const RAIL: { id: StudioMode; tool?: EditorTool; label: string }[] = [
+  { id: "order", label: "템플릿" },
+  { id: "edit", tool: "text", label: "텍스트" },
+  { id: "edit", tool: "select", label: "사진" },
+  { id: "edit", tool: "rect", label: "요소" },
+  { id: "brief", label: "배경" },
+  { id: "library", label: "업로드" },
+  { id: "library", label: "자료실" },
+  { id: "ai", label: "AI" },
+];
+
 const TOOL_KEYS: Record<string, EditorTool> = {
   v: "select",
   t: "text",
@@ -46,6 +57,7 @@ export function StudioApp() {
   const setZoom = useStudio((s) => s.setZoom);
   const zoom = useStudio((s) => s.zoom);
   const [help, setHelp] = useState(false);
+  const [railLabel, setRailLabel] = useState("템플릿");
   const drafts = useStudio((s) => s.drafts);
   const activeId = useStudio((s) => s.activeId);
   const brief = useStudio((s) => s.brief);
@@ -185,6 +197,8 @@ export function StudioApp() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
+          <button type="button" onClick={() => undo()} className="inline-flex h-7 items-center rounded-md border border-border px-2 text-[11px] font-bold">취소</button>
+          <button type="button" onClick={() => redo()} className="inline-flex h-7 items-center rounded-md border border-border px-2 text-[11px] font-bold">다시</button>
           <span className="hidden items-center gap-1 text-[11px] font-bold text-safe sm:inline-flex"><span className="size-1.5 rounded-full bg-safe" /> 로컬 설정 저장</span>
           <button
             type="button"
@@ -220,7 +234,23 @@ export function StudioApp() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <nav className="hidden w-[68px] shrink-0 flex-col bg-[#292725] py-2 text-[#c9beb5] md:flex" aria-label="편집 도구">
+          {RAIL.map((item) => {
+            const on = railLabel === item.label;
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => { setRailLabel(item.label); setMode(item.id); if (item.tool) setTool(item.tool); }}
+                className={`mx-1 mb-1 flex h-14 flex-col items-center justify-center rounded-lg text-[10px] ${on ? "bg-[#fff9ef] font-extrabold text-[#422b1d]" : "hover:bg-[#3a2b23]"}`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         {mode !== "edit" ? (
           <aside className="studio-side-panel flex max-h-[42vh] min-h-0 w-full shrink-0 flex-col border-border bg-panel md:h-full md:max-h-none md:w-[320px] md:border-r max-md:border-b">
             <div className="min-h-0 flex-1 overflow-y-auto">
@@ -229,6 +259,7 @@ export function StudioApp() {
           </aside>
         ) : null}
         <Workbench />
+        </div>
       </div>
       <Toaster position="bottom-right" richColors closeButton />
       {help ? (
