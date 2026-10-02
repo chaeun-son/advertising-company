@@ -153,8 +153,8 @@ export function Workbench() {
   if (mode === "library") return <div className="min-h-0 flex-1"><LibraryBrowser /></div>;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#f7f8fc]">
-      <div className="reference-toolbar flex h-16 flex-shrink-0 items-center gap-2 border-b border-border bg-white px-3">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#f3efe9]">
+      <div className="reference-toolbar flex h-16 flex-shrink-0 items-center gap-2 border-b border-[#ded7ce] bg-[#fffdf9] px-3">
         <div className="hidden items-center gap-1 lg:flex">
           {[
             {i:MousePointer2,l:"선택",a:()=>setTool("select")}, {i:Type,l:"텍스트",a:()=>setTool("text")},
@@ -186,7 +186,7 @@ export function Workbench() {
       <div className="flex min-h-0 flex-1">
         <div className="reference-library hidden w-[352px] shrink-0 border-r border-border bg-white xl:block">
           <div className="flex h-full">
-            <div className="w-[78px] shrink-0 border-r border-border bg-[#fbfbfe] py-2">
+            <div className="w-[78px] shrink-0 border-r border-[#3a312b] bg-[#292725] py-2 text-[#c9beb5]">
               {[
                 {i:LayoutTemplate,l:"템플릿",a:()=>{setMode("edit"); document.querySelector<HTMLInputElement>(".template-search input")?.focus();}},
                 {i:Type,l:"텍스트",a:()=>setTool("text")},

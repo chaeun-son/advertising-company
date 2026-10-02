@@ -1552,8 +1552,12 @@ export function VideoEditor() {
   }, [duration]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#1c150e] text-[#fffaf3] md:flex-row">
-      <nav className="flex shrink-0 flex-row overflow-x-auto bg-[#292725] py-1 text-[#c9beb5] md:w-16 md:flex-col md:py-2" aria-label="영상 도구">
+    <div className="flex h-full min-h-0 flex-col bg-[#e9e5df] text-[#302621] md:flex-row">
+      <nav className="flex shrink-0 flex-row overflow-x-auto bg-[#292725] py-1 text-[#c9beb5] md:w-[72px] md:flex-col md:py-2" aria-label="영상 도구">
+        <Link to="/" className="mx-2 mb-1 hidden flex-col items-center text-[8px] font-bold tracking-[0.14em] text-[#e7c48a] md:flex">
+          <span className="mb-1 block h-6 w-6 rotate-[30deg] rounded-sm bg-gradient-to-br from-[#e0b063] to-[#5c3a22]" />
+          CRESORA
+        </Link>
         {([
           ["media", "미디어"],
           ["ai", "AI 감독"],
@@ -1564,14 +1568,14 @@ export function VideoEditor() {
         ))}
       </nav>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <header className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2">
+      <header className="flex flex-wrap items-center gap-2 border-b border-[#ded7ce] bg-[#fffdf9] px-3 py-2 text-[#302621]">
         <div className="mr-2 flex items-center gap-2">
           <Clapperboard className="size-4 text-[#D4A04E]" />
           <div>
             <p className="text-sm font-bold leading-none">영상편집실</p>
-            <p className="mt-1 text-[10px] text-white/50">사진, 영상, 자막, 엔딩컷과 타이틀</p>
+            <p className="mt-1 text-[10px] text-[#8a7d74]">사진, 영상, 자막, 엔딩컷과 타이틀</p>
           </div>
-          <Link to="/studio" className="text-[11px] font-bold text-white/70">편집실</Link>
+          <Link to="/studio" className="text-[11px] font-bold text-[#5c514a]">편집실</Link>
         </div>
         <label className="relative inline-flex h-8 cursor-pointer items-center gap-1 overflow-hidden rounded-md bg-[#D4A04E] px-3 text-[12px] font-bold text-[#1c150e]">
           <Upload className="size-3.5" /> 사진 · 영상 추가
@@ -1592,64 +1596,64 @@ export function VideoEditor() {
           {playing ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
           {playing ? "일시정지" : "재생"}
         </button>
-        <span className="ml-1 font-mono text-[12px] text-white/70">{fmt(time)} / {fmt(duration)}</span>
+        <span className="ml-1 font-mono text-[12px] text-[#5c514a]">{fmt(time)} / {fmt(duration)}</span>
         <span className={`font-mono text-[12px] ${lengthGap && lengthGap !== "맞음" ? "text-[#E7B15A]" : "text-white/80"}`}>
           목표 {filmSeconds == null ? "자동" : fmtClock(filmSeconds)} / 현재 {fmtClock(shownLength)}{lengthGap ? ` ${lengthGap}` : ""}
         </span>
-        <button type="button" onClick={deliveryCheck} className="inline-flex h-8 items-center rounded-md border border-white/15 px-2.5 text-[12px] font-bold">납품 점검</button>
-        <button type="button" onClick={() => void saveCut()} className="inline-flex h-8 items-center rounded-md border border-white/15 px-2.5 text-[12px] font-bold">버전 저장</button>
-        <button type="button" onClick={() => void listVideoProjects().then(setProjects)} className="inline-flex h-8 items-center rounded-md border border-white/15 px-2.5 text-[12px] font-bold">불러오기</button>
-        <button type="button" disabled={exporting || clips.length === 0} onClick={() => setExportOpen((open) => !open)} className="ml-auto inline-flex h-8 items-center gap-1 rounded-md border border-white/15 px-3 text-[12px] font-bold disabled:opacity-40">
+        <button type="button" onClick={deliveryCheck} className="inline-flex h-8 items-center rounded-md border border-[#ded7ce] px-2.5 text-[12px] font-bold">납품 점검</button>
+        <button type="button" onClick={() => void saveCut()} className="inline-flex h-8 items-center rounded-md border border-[#ded7ce] px-2.5 text-[12px] font-bold">버전 저장</button>
+        <button type="button" onClick={() => void listVideoProjects().then(setProjects)} className="inline-flex h-8 items-center rounded-md border border-[#ded7ce] px-2.5 text-[12px] font-bold">불러오기</button>
+        <button type="button" disabled={exporting || clips.length === 0} onClick={() => setExportOpen((open) => !open)} className="ml-auto inline-flex h-8 items-center gap-1 rounded-md border border-[#ded7ce] px-3 text-[12px] font-bold disabled:opacity-40">
           <Download className="size-3.5" /> {exporting ? "내보내는 중…" : "영상 받기"}
         </button>
       </header>
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-white/10 px-3 py-1.5 text-[12px]">
-        <span className="font-bold text-white/50">길이</span>
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-[#ded7ce] bg-[#fffdf9] px-3 py-1.5 text-[12px]">
+        <span className="font-bold text-[#8a7d74]">길이</span>
         {([[null, "자동"], [180, "3분"], [300, "5분"], [600, "10분"]] as const).map(([value, label]) => (
-          <button key={label} type="button" onClick={() => chooseLength(value)} className={`rounded-full px-2 py-1 font-bold ${filmSeconds === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+          <button key={label} type="button" onClick={() => chooseLength(value)} className={`rounded-full px-2 py-1 font-bold ${filmSeconds === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{label}</button>
         ))}
-        <input value={customLength} onChange={(e) => setCustomLength(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") applyCustomLength(); }} placeholder="4분 30초" aria-label="직접 길이" className="h-7 w-24 rounded bg-white/10 px-2" />
-        <button type="button" onClick={applyCustomLength} className={`rounded-full px-2 py-1 font-bold ${filmSeconds != null && filmSeconds !== 180 && filmSeconds !== 300 && filmSeconds !== 600 ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>직접 적용</button>
-        <button type="button" onClick={toggleLengthLock} className={`rounded-full px-2 py-1 font-bold ${lengthLock ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{lengthLock ? "길이 고정 해제" : "길이 고정"}</button>
-        <span className="text-[11px] text-white/45">{lengthLock ? "인트로·엔딩·영상을 바꿔도 사진 길이만 다시 나눠 목표를 유지합니다." : "길이 고정이 해제되어 전체 길이가 내용에 따라 변합니다."}</span>
+        <input value={customLength} onChange={(e) => setCustomLength(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") applyCustomLength(); }} placeholder="4분 30초" aria-label="직접 길이" className="h-7 w-24 rounded bg-[#efe8df] px-2" />
+        <button type="button" onClick={applyCustomLength} className={`rounded-full px-2 py-1 font-bold ${filmSeconds != null && filmSeconds !== 180 && filmSeconds !== 300 && filmSeconds !== 600 ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>직접 적용</button>
+        <button type="button" onClick={toggleLengthLock} className={`rounded-full px-2 py-1 font-bold ${lengthLock ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{lengthLock ? "길이 고정 해제" : "길이 고정"}</button>
+        <span className="text-[11px] text-[#8a7d74]">{lengthLock ? "인트로·엔딩·영상을 바꿔도 사진 길이만 다시 나눠 목표를 유지합니다." : "길이 고정이 해제되어 전체 길이가 내용에 따라 변합니다."}</span>
       </div>
       {exportOpen ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#2a2118] px-3 py-2 text-[12px]">
-          <span className="font-bold text-white/60">형식</span>
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#ded7ce] bg-[#2a2118] px-3 py-2 text-[12px]">
+          <span className="font-bold text-[#6e625a]">형식</span>
           {(["mp4", "webm"] as const).map((format) => (
-            <button key={format} type="button" onClick={() => setExportFormat(format)} className={`rounded-full px-2 py-1 font-bold ${exportFormat === format ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{format.toUpperCase()}</button>
+            <button key={format} type="button" onClick={() => setExportFormat(format)} className={`rounded-full px-2 py-1 font-bold ${exportFormat === format ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{format.toUpperCase()}</button>
           ))}
           {exportFormat === "mp4" ? (
             <>
-              <span className="ml-2 font-bold text-white/60">화질</span>
+              <span className="ml-2 font-bold text-[#6e625a]">화질</span>
               {(Object.keys(EXPORT_SIZES) as ExportSize[]).map((size) => (
-                <button key={size} type="button" onClick={() => setExportSize(size)} className={`rounded-full px-2 py-1 font-bold ${exportSize === size ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{size}</button>
+                <button key={size} type="button" onClick={() => setExportSize(size)} className={`rounded-full px-2 py-1 font-bold ${exportSize === size ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{size}</button>
               ))}
-              <span className="ml-2 font-bold text-white/60">프레임</span>
+              <span className="ml-2 font-bold text-[#6e625a]">프레임</span>
               {([30, 60] as const).map((fps) => (
-                <button key={fps} type="button" onClick={() => setExportFps(fps)} className={`rounded-full px-2 py-1 font-bold ${exportFps === fps ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{fps}fps</button>
+                <button key={fps} type="button" onClick={() => setExportFps(fps)} className={`rounded-full px-2 py-1 font-bold ${exportFps === fps ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{fps}fps</button>
               ))}
             </>
-          ) : <span className="text-white/50">기존 WEBM은 미리보기 크기 그대로 받습니다.</span>}
+          ) : <span className="text-[#8a7d74]">기존 WEBM은 미리보기 크기 그대로 받습니다.</span>}
           <button type="button" disabled={exporting} onClick={() => void (exportFormat === "mp4" ? exportMp4() : exportVideo())} className="rounded-md bg-white px-3 py-1 font-bold text-[#1c150e] disabled:opacity-40">
             {exportFormat === "mp4" ? "H.264 MP4 받기" : "WEBM 받기"}
           </button>
         </div>
       ) : null}
       {projects.length ? (
-        <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-3 py-2 text-[12px]">
+        <div className="flex gap-2 overflow-x-auto border-b border-[#ded7ce] px-3 py-2 text-[12px]">
           {projects.map((project) => (
-            <button key={project.id} type="button" onClick={() => void openCut(project.id)} className="shrink-0 rounded-md bg-white/10 px-2 py-1 font-bold">{project.name}</button>
+            <button key={project.id} type="button" onClick={() => void openCut(project.id)} className="shrink-0 rounded-md bg-[#efe8df] px-2 py-1 font-bold">{project.name}</button>
           ))}
         </div>
       ) : null}
-      <div className={desk === "media" ? "border-b border-white/10 px-3 py-2" : "hidden"}>
+      <div className={desk === "media" ? "border-b border-[#ded7ce] px-3 py-2" : "hidden"}>
         <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[12px]">
-          <span className="font-bold text-white/50">순서</span>
+          <span className="font-bold text-[#8a7d74]">순서</span>
           {([["keep", "원본 유지"], ["manual", "직접 정렬"], ["ai", "AI 재배치"]] as const).map(([value, label]) => (
-            <button key={value} type="button" onClick={() => choosePhotoOrder(value)} className={`rounded-full px-2 py-1 font-bold ${photoOrder === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+            <button key={value} type="button" onClick={() => choosePhotoOrder(value)} className={`rounded-full px-2 py-1 font-bold ${photoOrder === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{label}</button>
           ))}
-          <span className="text-[11px] text-white/45">
+          <span className="text-[11px] text-[#8a7d74]">
             {photoOrder === "ai"
               ? "AI 재배치는 감독에게 맡길 때만 사진 순서를 바꿉니다. 영상은 그 뒤에 붙습니다."
               : photoOrder === "keep"
@@ -1659,7 +1663,7 @@ export function VideoEditor() {
         </div>
         <div className="flex gap-2 overflow-x-auto">
           {photos.length === 0 && !clips.some((clip) => clip.kind === "video") ? (
-            <p className="py-2 text-[12px] text-white/45">JPG, PNG 사진과 MP4, MOV, WEBM 영상을 올리면 여기에 보이고, 타임라인에도 바로 들어갑니다.</p>
+            <p className="py-2 text-[12px] text-[#8a7d74]">JPG, PNG 사진과 MP4, MOV, WEBM 영상을 올리면 여기에 보이고, 타임라인에도 바로 들어갑니다.</p>
           ) : null}
           {shelfItems.map((clip) => {
             const photoId = clip.kind === "image" ? bodyPhotoId(clip) : "";
@@ -1686,10 +1690,10 @@ export function VideoEditor() {
                 {clip.endingCut ? <span className="mt-1 block text-[11px] font-bold">엔딩컷</span> : clip.kind === "video" ? (
                   <>
                     <span className="mt-1 block truncate text-[11px] font-bold">영상 · {clip.name}</span>
-                    <span className="text-[10px] text-white/45">{clip.duration.toFixed(1)}초 · {clip.videoPlace === "manual" ? "직접 배치" : "사진 뒤"}</span>
+                    <span className="text-[10px] text-[#8a7d74]">{clip.duration.toFixed(1)}초 · {clip.videoPlace === "manual" ? "직접 배치" : "사진 뒤"}</span>
                   </>
                 ) : (
-                  <input value={photo?.caption ?? ""} placeholder={`${number}번 자막`} onChange={(e) => setCaption(photoId, e.target.value)} className="mt-1 h-8 w-full rounded bg-white/10 px-2 text-[12px]" />
+                  <input value={photo?.caption ?? ""} placeholder={`${number}번 자막`} onChange={(e) => setCaption(photoId, e.target.value)} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2 text-[12px]" />
                 )}
               </div>
             );
@@ -1715,84 +1719,84 @@ export function VideoEditor() {
       />
       </div>
       {desk === "ai" ? (
-        <div className="max-h-[46vh] overflow-y-auto border-b border-white/10 px-3 py-2 text-[12px]">
+        <div className="max-h-[46vh] overflow-y-auto border-b border-[#ded7ce] px-3 py-2 text-[12px]">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-white/60">길이</span>
+            <span className="font-bold text-[#6e625a]">길이</span>
             {([[null, "자동"], [180, "3분"], [300, "5분"], [600, "10분"]] as const).map(([value, label]) => (
-              <button key={label} type="button" onClick={() => chooseLength(value)} className={`rounded-full px-2 py-1 font-bold ${filmSeconds === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+              <button key={label} type="button" onClick={() => chooseLength(value)} className={`rounded-full px-2 py-1 font-bold ${filmSeconds === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{label}</button>
             ))}
-            <span className="ml-2 font-bold text-white/60">분위기</span>
+            <span className="ml-2 font-bold text-[#6e625a]">분위기</span>
             {([["warm", "감동"], ["bold", "강렬"], ["calm", "잔잔"]] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setFilmMood(value)} className={`rounded-full px-2 py-1 font-bold ${filmMood === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+              <button key={value} type="button" onClick={() => setFilmMood(value)} className={`rounded-full px-2 py-1 font-bold ${filmMood === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{label}</button>
             ))}
-            <span className="ml-2 font-bold text-white/60">배경음악</span>
+            <span className="ml-2 font-bold text-[#6e625a]">배경음악</span>
             {([["builtin", "기본 음악 사용"], ["library", "내 음악에서 자동 선택"]] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setMusicPick(value)} className={`rounded-full px-2 py-1 font-bold ${musicPick === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+              <button key={value} type="button" onClick={() => setMusicPick(value)} className={`rounded-full px-2 py-1 font-bold ${musicPick === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{label}</button>
             ))}
-            <span className="ml-2 font-bold text-white/60">순서</span>
+            <span className="ml-2 font-bold text-[#6e625a]">순서</span>
             {([["keep", "원본 유지"], ["manual", "직접 정렬"], ["ai", "AI 재배치"]] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => choosePhotoOrder(value)} className={`rounded-full px-2 py-1 font-bold ${photoOrder === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{label}</button>
+              <button key={value} type="button" onClick={() => choosePhotoOrder(value)} className={`rounded-full px-2 py-1 font-bold ${photoOrder === value ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{label}</button>
             ))}
-            <button type="button" onClick={() => setIntroOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${introOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>인트로 {introOn ? "켜짐" : "꺼짐"}</button>
-            <button type="button" onClick={() => setEndingCutOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingCutOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>엔딩컷 {endingCutOn ? "켜짐" : "꺼짐"}</button>
-            <button type="button" onClick={() => setEndingOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>엔딩 타이틀 {endingOn ? "켜짐" : "꺼짐"}</button>
+            <button type="button" onClick={() => setIntroOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${introOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>인트로 {introOn ? "켜짐" : "꺼짐"}</button>
+            <button type="button" onClick={() => setEndingCutOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingCutOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>엔딩컷 {endingCutOn ? "켜짐" : "꺼짐"}</button>
+            <button type="button" onClick={() => setEndingOn((on) => !on)} className={`rounded-full px-2 py-1 font-bold ${endingOn ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>엔딩 타이틀 {endingOn ? "켜짐" : "꺼짐"}</button>
             <button type="button" onClick={() => void runDirector()} className="rounded-md bg-white px-2 py-1 font-bold text-[#1c150e]">이 구성으로 만들기</button>
-            <button type="button" onClick={() => { setDirectorOpen(false); setDesk("media"); }} className="rounded-md px-2 py-1 text-white/50">접기</button>
+            <button type="button" onClick={() => { setDirectorOpen(false); setDesk("media"); }} className="rounded-md px-2 py-1 text-[#8a7d74]">접기</button>
           </div>
-          <p className="mt-2 text-[11px] text-white/55">
+          <p className="mt-2 text-[11px] text-[#6e625a]">
             {planPreview.length
               ? `목표 ${filmSeconds == null ? "자동" : fmtClock(filmSeconds)} / 전체 ${fmt(planNumbers.total)} · 인트로 ${introOn ? fmt(planNumbers.intro) : "없음"} · 본편 ${fmt(planNumbers.body)} · 엔딩컷 ${endingCutOn ? fmt(planNumbers.endingCut) : "없음"} · 엔딩 타이틀 ${endingOn ? fmt(planNumbers.ending) : "없음"}${filmSeconds != null ? ` · ${lengthGapLabel(planNumbers.total, filmSeconds)}` : ""}${endingOn ? " · 엔딩 타이틀에서 배경음악이 0까지 사라집니다" : ""} · 고정한 곡은 감독이 바꾸지 않습니다.`
               : "사진이나 영상을 올리면 인트로, 본편, 엔딩컷, 엔딩 타이틀 순서로 맞춥니다. 전체 길이를 정하면 영상 원본 길이는 유지하고 사진 길이만 나눕니다."}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-white/60">템플릿</span>
+            <span className="font-bold text-[#6e625a]">템플릿</span>
             {TITLE_TEMPLATES.map((preset) => (
-              <button key={preset.id} type="button" onClick={() => applyPreset(preset)} className="rounded-full bg-white/10 px-2 py-1 font-bold">{preset.label}</button>
+              <button key={preset.id} type="button" onClick={() => applyPreset(preset)} className="rounded-full bg-[#efe8df] px-2 py-1 font-bold">{preset.label}</button>
             ))}
             {savedTemplates.map((preset) => (
-              <span key={preset.id} className="inline-flex items-center rounded-full bg-white/10">
+              <span key={preset.id} className="inline-flex items-center rounded-full bg-[#efe8df]">
                 <button type="button" onClick={() => applyPreset(preset)} className="px-2 py-1 font-bold">{preset.label}</button>
                 <button type="button" onClick={() => removeTemplate(preset.id)} className="pr-2 text-white/40" aria-label={`${preset.label} 삭제`}>×</button>
               </span>
             ))}
-            <input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="내 템플릿 이름" className="h-7 w-32 rounded bg-white/10 px-2" />
-            <button type="button" onClick={saveTemplate} className="rounded-md border border-white/15 px-2 py-1 font-bold">이 타이틀 저장</button>
+            <input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="내 템플릿 이름" className="h-7 w-32 rounded bg-[#efe8df] px-2" />
+            <button type="button" onClick={saveTemplate} className="rounded-md border border-[#ded7ce] px-2 py-1 font-bold">이 타이틀 저장</button>
           </div>
-          <section className={`mt-3 rounded-md border border-white/10 p-2 ${endingCutOn ? "" : "opacity-50"}`}>
+          <section className={`mt-3 rounded-md border border-[#ded7ce] p-2 ${endingCutOn ? "" : "opacity-50"}`}>
             <p className="mb-2 font-bold">엔딩컷</p>
             {endingCutOn ? (
               <div className="grid gap-2 md:grid-cols-3">
                 <label className="block">마지막 장면
-                  <select value={endingCutId} onChange={(e) => setEndingCutId(e.target.value)} className="mt-1 h-8 w-full rounded bg-white/10 px-2">
+                  <select value={endingCutId} onChange={(e) => setEndingCutId(e.target.value)} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2">
                     <option value="">마지막 사진</option>
                     {cutChoices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                   </select>
                   <span className="mt-1 block text-[10px] text-white/40">단체사진, 행사장, 짧은 마지막 영상을 고릅니다. 비워 두면 마지막 사진이 엔딩컷이 되어 본편에서는 빠집니다.</span>
                 </label>
                 <label className="block">표시 시간
-                  <input type="number" min={5} max={12} step={0.5} disabled={cutIsVideo} value={endingCutSeconds} onChange={(e) => applyEndingCutLength(Math.min(12, Math.max(5, Number(e.target.value) || 7)))} className="mt-1 h-8 w-full rounded bg-white/10 px-2 disabled:opacity-40" />
+                  <input type="number" min={5} max={12} step={0.5} disabled={cutIsVideo} value={endingCutSeconds} onChange={(e) => applyEndingCutLength(Math.min(12, Math.max(5, Number(e.target.value) || 7)))} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2 disabled:opacity-40" />
                   <span className="mt-1 block text-[10px] text-white/40">{cutIsVideo ? "영상 엔딩컷은 줄이지 않고, 트림한 길이 그대로 재생합니다." : "사진은 5초에서 8초가 무난합니다. 기본 7초."}</span>
                 </label>
                 <label className="block">엔딩컷 문구
-                  <input value={endingCutCaption} onChange={(e) => setEndingCutCaption(e.target.value)} placeholder="함께한 50년" className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
+                  <input value={endingCutCaption} onChange={(e) => setEndingCutCaption(e.target.value)} placeholder="함께한 50년" className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2" />
                   <span className="mt-1 block text-[10px] text-white/40">예: 함께한 50년, 우리의 이야기는 계속됩니다</span>
                 </label>
               </div>
-            ) : <p className="text-white/45">엔딩컷 없이 본편 다음에 엔딩 타이틀로 이어집니다.</p>}
+            ) : <p className="text-[#8a7d74]">엔딩컷 없이 본편 다음에 엔딩 타이틀로 이어집니다.</p>}
           </section>
           <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <section className={`rounded-md border border-white/10 p-2 ${introOn ? "" : "opacity-50"}`}>
+            <section className={`rounded-md border border-[#ded7ce] p-2 ${introOn ? "" : "opacity-50"}`}>
               <p className="mb-2 font-bold">인트로 타이틀</p>
-              {introOn ? <TitleFields card={introCard} allowBackgroundImage onChange={commitTitle} onImage={(slot, file) => void pickTitleImage("intro", slot, file)} /> : <p className="text-white/45">인트로 없이 본편부터 시작합니다.</p>}
+              {introOn ? <TitleFields card={introCard} allowBackgroundImage onChange={commitTitle} onImage={(slot, file) => void pickTitleImage("intro", slot, file)} /> : <p className="text-[#8a7d74]">인트로 없이 본편부터 시작합니다.</p>}
             </section>
-            <section className={`rounded-md border border-white/10 p-2 ${endingOn ? "" : "opacity-50"}`}>
+            <section className={`rounded-md border border-[#ded7ce] p-2 ${endingOn ? "" : "opacity-50"}`}>
               <p className="mb-2 font-bold">엔딩 타이틀</p>
-              {endingOn ? <TitleFields card={endingCard} onChange={commitTitle} onImage={(slot, file) => void pickTitleImage("ending", slot, file)} /> : <p className="text-white/45">엔딩 타이틀 없이 끝납니다. 배경음악도 줄어들지 않습니다.</p>}
+              {endingOn ? <TitleFields card={endingCard} onChange={commitTitle} onImage={(slot, file) => void pickTitleImage("ending", slot, file)} /> : <p className="text-[#8a7d74]">엔딩 타이틀 없이 끝납니다. 배경음악도 줄어들지 않습니다.</p>}
             </section>
           </div>
           {planPreview.length ? (
             <div className="mt-3 space-y-1">
-              <p className="font-bold text-white/50">이 구성으로 만들면</p>
+              <p className="font-bold text-[#8a7d74]">이 구성으로 만들면</p>
               {planPreview.filter((clip) => clip.title || clip.kind === "image" || clip.kind === "video").map((clip) => {
                 const photoId = clip.id.endsWith("-photo") ? clip.id.slice(0, -"-photo".length) : "";
                 const photo = photos.find((item) => item.id === photoId);
@@ -1800,12 +1804,12 @@ export function VideoEditor() {
                   <div key={`${clip.id}-${clip.start}`} className="flex items-center gap-2">
                     <span className="w-16 shrink-0 text-[10px] text-white/40">{clip.endingCut ? "엔딩컷" : clip.title ? (clip.title.role === "intro" ? "인트로" : "엔딩") : clip.kind === "video" ? "영상" : "사진"}</span>
                     {photo ? (
-                      <select value={photo.beat ?? "event"} onChange={(e) => setPhotos((cur) => cur.map((item) => item.id === photo.id ? { ...item, beat: e.target.value as BeatId } : item))} className="h-7 rounded bg-white/10 px-1">
+                      <select value={photo.beat ?? "event"} onChange={(e) => setPhotos((cur) => cur.map((item) => item.id === photo.id ? { ...item, beat: e.target.value as BeatId } : item))} className="h-7 rounded bg-[#efe8df] px-1">
                         {BEATS.map((beat) => <option key={beat.id} value={beat.id}>{beat.title}</option>)}
                       </select>
                     ) : null}
                     <span className="truncate">{clip.title?.main || photo?.caption || clip.name}</span>
-                    <span className="ml-auto text-white/50">{clip.duration.toFixed(1)}초</span>
+                    <span className="ml-auto text-[#8a7d74]">{clip.duration.toFixed(1)}초</span>
                   </div>
                 );
               })}
@@ -1814,25 +1818,25 @@ export function VideoEditor() {
         </div>
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <div className="flex min-w-0 flex-1 items-center justify-center bg-[#100e0c] p-4">
+        <div className="flex min-w-0 flex-1 items-center justify-center bg-[#ddd6cc] p-4">
           <canvas ref={canvasRef} width={1280} height={720} onPointerDown={beginPhotoPlace} className={`max-h-full max-w-full rounded-md bg-black shadow-lg ${selectedClip && !selectedClip.title && !selectedClip.pip && (selectedClip.kind === "image" || selectedClip.kind === "video") ? "cursor-grab" : ""}`} />
         </div>
-        <aside className="max-h-72 shrink-0 overflow-y-auto border-t border-white/10 p-3 md:max-h-none md:w-80 md:border-l md:border-t-0">
-          <p className="text-[11px] font-bold text-white/50">선택한 클립</p>
+        <aside className="max-h-72 shrink-0 overflow-y-auto border-t border-[#ded7ce] bg-[#fffdf9] p-3 text-[#302621] md:max-h-none md:w-80 md:border-l md:border-t-0">
+          <p className="text-[11px] font-bold text-[#8a7d74]">선택한 클립</p>
           <ProTools safeOn={safeOn} onSafe={setSafeOn} onOverlay={(file) => addOverlay(file)} />
           {selectedClip ? (
             <div className="mt-3 space-y-3 text-[12px]">
               <p className="truncate font-bold">{selectedClip.name}</p>
               <label className="block">시작
-                <input type="number" step="0.1" min={0} value={round1(selectedClip.start)} onChange={(e) => patch(selectedClip.id, { start: Number(e.target.value) || 0 })} className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
+                <input type="number" step="0.1" min={0} value={round1(selectedClip.start)} onChange={(e) => patch(selectedClip.id, { start: Number(e.target.value) || 0 })} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2" />
               </label>
               {selectedClip.title ? (
                 <>
                   <TitleFields card={selectedClip.title} allowBackgroundImage={selectedClip.title.role === "intro"} onChange={(card) => commitTitle(card, selectedClip.id)} onImage={(slot, file) => void pickTitleImage(selectedClip.title!.role, slot, file, selectedClip.id)} />
                   {selectedClip.title.role === "intro" ? (
                     <div className="flex gap-1">
-                      <button type="button" onClick={addIntro} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">인트로 추가</button>
-                      <button type="button" onClick={() => removeIntro(selectedClip.id)} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">이 인트로 삭제</button>
+                      <button type="button" onClick={addIntro} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">인트로 추가</button>
+                      <button type="button" onClick={() => removeIntro(selectedClip.id)} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">이 인트로 삭제</button>
                     </div>
                   ) : null}
                 </>
@@ -1840,22 +1844,22 @@ export function VideoEditor() {
                 <VideoTrim clip={selectedClip} onChange={(partial) => patch(selectedClip.id, partial)} />
               ) : (
                 <label className="block">길이
-                  <input type="number" step="0.1" min={0.2} value={round1(selectedClip.duration)} onChange={(e) => patch(selectedClip.id, { duration: Math.max(0.2, Number(e.target.value) || 0.2) })} className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
+                  <input type="number" step="0.1" min={0.2} value={round1(selectedClip.duration)} onChange={(e) => patch(selectedClip.id, { duration: Math.max(0.2, Number(e.target.value) || 0.2) })} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2" />
                 </label>
               )}
               {(selectedClip.kind === "image" || selectedClip.kind === "video") && !selectedClip.title ? (
                 <>
                   {!selectedClip.pip ? (
                     <>
-                      <p className="font-bold text-white/70">화면 배치</p>
-                      <p className="text-[10px] leading-relaxed text-white/45">이 장면이 보일 때 미리보기를 끌어 옮깁니다. 감독에게 맡겨도 끌어 둔 위치는 남고, 순서는 자동으로 다시 맞춥니다.</p>
+                      <p className="font-bold text-[#5c514a]">화면 배치</p>
+                      <p className="text-[10px] leading-relaxed text-[#8a7d74]">이 장면이 보일 때 미리보기를 끌어 옮깁니다. 감독에게 맡겨도 끌어 둔 위치는 남고, 순서는 자동으로 다시 맞춥니다.</p>
                       <label className="block">크기 {((selectedClip.scale ?? 1) * 100).toFixed(0)}%
                         <input type="range" min={0.6} max={2.2} step={0.02} value={selectedClip.placed ? (selectedClip.scale ?? 1) : 1} onChange={(e) => patch(selectedClip.id, { placed: true, scale: Number(e.target.value), x: selectedClip.placed ? selectedClip.x : 0.5, y: selectedClip.placed ? selectedClip.y : 0.5 })} className="mt-1 w-full" />
                       </label>
-                      <button type="button" onClick={() => patch(selectedClip.id, { placed: false, scale: 1, x: 0.5, y: 0.5 })} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">자동 위치</button>
+                      <button type="button" onClick={() => patch(selectedClip.id, { placed: false, scale: 1, x: 0.5, y: 0.5 })} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">자동 위치</button>
                     </>
                   ) : null}
-                  <p className="font-bold text-white/70">영상 효과</p>
+                  <p className="font-bold text-[#5c514a]">영상 효과</p>
                   <EffectLine label="색" active={(selectedClip.look ?? "none") !== "none"} name={LOOKS.find((item) => item.id === (selectedClip.look ?? "none"))?.label ?? "원본"} onAdd={() => patch(selectedClip.id, { look: "warm", grade: undefined })} onRemove={() => patch(selectedClip.id, { look: "none", grade: undefined })} />
                   {(selectedClip.look ?? "none") !== "none" ? <Chips label="색 고르기" value={selectedClip.look ?? "none"} options={LOOKS.filter((item) => item.id !== "none")} onChange={(look) => patch(selectedClip.id, { look, grade: undefined })} /> : null}
                   <EffectLine label="움직임" active={(selectedClip.motion ?? "none") !== "none"} name={MOTIONS.find((item) => item.id === (selectedClip.motion ?? "none"))?.label ?? "고정"} onAdd={() => patch(selectedClip.id, { motion: "slow-zoom" })} onRemove={() => patch(selectedClip.id, { motion: "none" })} />
@@ -1867,7 +1871,7 @@ export function VideoEditor() {
               {selectedClip.kind === "text" && !selectedClip.title ? (
                 <>
                   <label className="block">문구
-                    <textarea value={selectedClip.text} onChange={(e) => patch(selectedClip.id, { text: e.target.value })} className="mt-1 h-20 w-full rounded bg-white/10 p-2" />
+                    <textarea value={selectedClip.text} onChange={(e) => patch(selectedClip.id, { text: e.target.value })} className="mt-1 h-20 w-full rounded bg-[#efe8df] p-2" />
                   </label>
                   <label className="block">크기 {selectedClip.fontSize}
                     <input type="range" min={24} max={160} value={selectedClip.fontSize} onChange={(e) => patch(selectedClip.id, { fontSize: Number(e.target.value) })} className="mt-1 w-full" />
@@ -1882,14 +1886,14 @@ export function VideoEditor() {
               ) : null}
               {selectedClip.kind === "video" ? (
                 <>
-                  <button type="button" onClick={() => patch(selectedClip.id, { audioOn: selectedClip.audioOn === false })} className={`rounded px-2 py-1 text-[11px] font-bold ${selectedClip.audioOn === false ? "bg-white/10" : "bg-[#D4A04E] text-[#1c150e]"}`}>원음 {selectedClip.audioOn === false ? "꺼짐" : "켜짐"}</button>
+                  <button type="button" onClick={() => patch(selectedClip.id, { audioOn: selectedClip.audioOn === false })} className={`rounded px-2 py-1 text-[11px] font-bold ${selectedClip.audioOn === false ? "bg-[#efe8df]" : "bg-[#D4A04E] text-[#1c150e]"}`}>원음 {selectedClip.audioOn === false ? "꺼짐" : "켜짐"}</button>
                   <label className="block">볼륨 {Math.round(selectedClip.volume * 100)}%
                     <input type="range" min={0} max={1} step={0.05} value={selectedClip.volume} onChange={(e) => patch(selectedClip.id, { volume: Number(e.target.value) })} className="mt-1 w-full" />
                   </label>
                   <label className="block">자막
-                    <textarea value={clips.find((clip) => clip.id === `${selectedClip.id}-caption`)?.text || selectedClip.text} onChange={(e) => setVideoCaption(selectedClip.id, e.target.value)} className="mt-1 h-16 w-full rounded bg-white/10 p-2" />
+                    <textarea value={clips.find((clip) => clip.id === `${selectedClip.id}-caption`)?.text || selectedClip.text} onChange={(e) => setVideoCaption(selectedClip.id, e.target.value)} className="mt-1 h-16 w-full rounded bg-[#efe8df] p-2" />
                   </label>
-                  <p className="text-[10px] leading-relaxed text-white/45">원음을 켜면 그 구간만 배경음악이 낮아졌다가 영상이 끝나면 돌아옵니다. 앞뒤 장면과는 크로스페이드로 이어지고, 타임라인에서 자리를 옮길 수 있습니다. 감독에게 맡기면 영상 길이는 줄이지 않습니다.</p>
+                  <p className="text-[10px] leading-relaxed text-[#8a7d74]">원음을 켜면 그 구간만 배경음악이 낮아졌다가 영상이 끝나면 돌아옵니다. 앞뒤 장면과는 크로스페이드로 이어지고, 타임라인에서 자리를 옮길 수 있습니다. 감독에게 맡기면 영상 길이는 줄이지 않습니다.</p>
                 </>
               ) : null}
               {selectedClip.kind === "audio" ? (
@@ -1903,8 +1907,8 @@ export function VideoEditor() {
                   <label className="block">Fade Out {(selectedClip.fadeOut ?? 0).toFixed(1)}초
                     <input type="range" min={0} max={6} step={0.1} value={selectedClip.fadeOut ?? 0} onChange={(e) => patch(selectedClip.id, { fadeOut: Number(e.target.value) })} className="mt-1 w-full" />
                   </label>
-                  <button type="button" onClick={() => patch(selectedClip.id, { pinned: !selectedClip.pinned })} className={`rounded px-2 py-1 text-[11px] font-bold ${selectedClip.pinned ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{selectedClip.pinned ? "이 음악 고정됨" : "이 음악 고정"}</button>
-                  <p className="text-[10px] leading-relaxed text-white/45">영상 원음이 켜진 구간에서는 배경음악이 낮아집니다. 곡이 겹치면 크로스페이드로 이어집니다. 고정한 곡은 감독에게 맡길 때 바뀌지 않습니다.</p>
+                  <button type="button" onClick={() => patch(selectedClip.id, { pinned: !selectedClip.pinned })} className={`rounded px-2 py-1 text-[11px] font-bold ${selectedClip.pinned ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{selectedClip.pinned ? "이 음악 고정됨" : "이 음악 고정"}</button>
+                  <p className="text-[10px] leading-relaxed text-[#8a7d74]">영상 원음이 켜진 구간에서는 배경음악이 낮아집니다. 곡이 겹치면 크로스페이드로 이어집니다. 고정한 곡은 감독에게 맡길 때 바뀌지 않습니다.</p>
                 </>
               ) : null}
               <ProPanel
@@ -1928,11 +1932,11 @@ export function VideoEditor() {
                 }}
               />
             </div>
-          ) : <p className="mt-3 text-[12px] leading-relaxed text-white/45">영상, 사진, 소리를 가져오거나 글자를 추가하세요. 스페이스로 재생합니다.</p>}
+          ) : <p className="mt-3 text-[12px] leading-relaxed text-[#8a7d74]">영상, 사진, 소리를 가져오거나 글자를 추가하세요. 스페이스로 재생합니다.</p>}
         </aside>
       </div>
-      <div className="h-52 shrink-0 border-t border-white/10 bg-[#241c15]">
-        <div className="flex flex-wrap items-center gap-3 px-3 py-1.5 text-[11px] text-white/50">
+      <div className="h-52 shrink-0 border-t border-[#ded7ce] bg-[#f6f1ea] text-[#302621]">
+        <div className="flex flex-wrap items-center gap-3 px-3 py-1.5 text-[11px] text-[#8a7d74]">
           <span>타임라인</span>
           <span className={`font-mono ${lengthGap && lengthGap !== "맞음" ? "text-[#E7B15A]" : "text-white/75"}`}>
             목표 {filmSeconds == null ? "자동" : fmtClock(filmSeconds)} / 현재 {fmtClock(shownLength)}{lengthGap ? ` ${lengthGap}` : ""}
@@ -1989,12 +1993,12 @@ function VideoTrim({ clip, onChange }: { clip: Clip; onChange: (partial: Partial
   };
   return (
     <>
-      <p className="text-[11px] text-white/50">원본 {fmt(mediaLength)}</p>
+      <p className="text-[11px] text-[#8a7d74]">원본 {fmt(mediaLength)}</p>
       <label className="block">트림 시작
-        <input type="number" step="0.1" min={0} max={round1(Math.max(0, mediaLength - 0.4))} value={round1(clip.offset)} onChange={(e) => setOffset(Number(e.target.value) || 0)} className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
+        <input type="number" step="0.1" min={0} max={round1(Math.max(0, mediaLength - 0.4))} value={round1(clip.offset)} onChange={(e) => setOffset(Number(e.target.value) || 0)} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2" />
       </label>
       <label className="block">재생 길이
-        <input type="number" step="0.1" min={0.4} value={round1(clip.duration)} onChange={(e) => setDuration(Number(e.target.value) || 0.4)} className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
+        <input type="number" step="0.1" min={0.4} value={round1(clip.duration)} onChange={(e) => setDuration(Number(e.target.value) || 0.4)} className="mt-1 h-8 w-full rounded bg-[#efe8df] px-2" />
       </label>
     </>
   );
@@ -2278,14 +2282,14 @@ function wrapMeasured(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
 function EffectLine({ label, active, name, onAdd, onRemove }: { label: string; active: boolean; name: string; onAdd: () => void; onRemove: () => void }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-white/70">{label}</span>
+      <span className="text-[#5c514a]">{label}</span>
       {active ? (
         <span className="inline-flex items-center gap-1 rounded-full bg-[#D4A04E] px-2 py-1 text-[11px] font-bold text-[#1c150e]">
           {name}
           <button type="button" onClick={onRemove} aria-label={`${label} 삭제`}>삭제</button>
         </span>
       ) : (
-        <button type="button" onClick={onAdd} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">{label} 추가</button>
+        <button type="button" onClick={onAdd} className="rounded bg-[#efe8df] px-2 py-1 text-[11px] font-bold">{label} 추가</button>
       )}
     </div>
   );
@@ -2294,10 +2298,10 @@ function EffectLine({ label, active, name, onAdd, onRemove }: { label: string; a
 function Chips<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (id: T) => void }) {
   return (
     <div>
-      <p className="text-[11px] text-white/50">{label}</p>
+      <p className="text-[11px] text-[#8a7d74]">{label}</p>
       <div className="mt-1 flex flex-wrap gap-1">
         {options.map((option) => (
-          <button key={option.id} type="button" onClick={() => onChange(option.id)} className={`rounded px-2 py-1 text-[11px] font-bold ${value === option.id ? "bg-[#D4A04E] text-[#1c150e]" : "bg-white/10"}`}>{option.label}</button>
+          <button key={option.id} type="button" onClick={() => onChange(option.id)} className={`rounded px-2 py-1 text-[11px] font-bold ${value === option.id ? "bg-[#D4A04E] text-[#1c150e]" : "bg-[#efe8df]"}`}>{option.label}</button>
         ))}
       </div>
     </div>
@@ -2349,7 +2353,7 @@ const TEXT_STYLES: { id: TextStyle; label: string }[] = [
 ];
 
 function Tool({ children, onClick }: { children: ReactNode; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="inline-flex h-8 items-center gap-1 rounded-md border border-white/15 px-2.5 text-[12px] font-bold">{children}</button>;
+  return <button type="button" onClick={onClick} className="inline-flex h-8 items-center gap-1 rounded-md border border-[#ded7ce] px-2.5 text-[12px] font-bold">{children}</button>;
 }
 
 function round1(n: number) {

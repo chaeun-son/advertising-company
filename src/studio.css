@@ -131,7 +131,8 @@
 .reference-toolbar .editor-top-tool.is-active{color:#3B2F23;background:#fff4e3}
 .reference-toolbar .icon-btn,.reference-toolbar .top-action,.reference-toolbar .zoom-pill{border-color:#e9ebf2;box-shadow:0 1px 3px #19245009}
 .reference-library{background:#fff}
-.reference-library .side-tool{height:63px;font-size:10px}
+.reference-library .side-tool{height:63px;font-size:10px;color:#d9cfc6}
+.reference-library .side-tool:hover,.reference-library .side-tool.active{color:#422b1d;background:#fff9ef;border-left-color:#e0b063}
 .reference-library .template-search{height:39px;background:#fbfcff;border-radius:9px}
 .reference-library .category-tile{height:34px;text-align:left;padding:0 8px;border:1px solid #e8ebf2;background:#fafbfe;border-radius:7px;white-space:nowrap}
 .reference-library .category-tile:hover{background:#fff1dc;color:#3B2F23}

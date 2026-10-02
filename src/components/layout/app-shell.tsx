@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { BookOpen, Clapperboard, ClipboardList, LayoutGrid, PenTool, Plus, Settings2, Users } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { PRODUCT_NAME } from "@/lib/brand";
+import "@/make.css";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/input";
 import { signOut } from "@/lib/auth/client";
@@ -42,6 +43,11 @@ export function AppShell({
       setName(staff[0]!.name);
     }
   }, [hydrated, name, staff, setName]);
+
+  const bare = pathname === "/" || pathname.startsWith("/studio") || pathname.startsWith("/video");
+  if (bare) {
+    return <div className="h-dvh min-h-0 overflow-hidden bg-[#f3efe9]">{children}</div>;
+  }
 
   return (
     <div className="min-h-dvh bg-[#f4f0ea] text-[#302621]">

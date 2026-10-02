@@ -1,4 +1,4 @@
-import { HelpCircle, Moon, Sun } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { getAiStatus } from "@/lib/ai/generate";
@@ -168,74 +168,13 @@ export function StudioApp() {
   }, [deleteSelected, duplicateSelected, nudgeSelected, redo, setTool, setZoom, undo, zoom]);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background text-foreground">
-      <header className="reference-header flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-border bg-panel px-3 py-2 md:px-4">
-        <h1 className="flex items-center gap-2 text-[15px] font-black tracking-tight">
-          <img src={BRAND.symbol} alt="" className="size-8 object-contain" />
-          <span className="flex flex-col leading-none">
-            <span>{PRODUCT_NAME}</span>
-            <span className="mt-0.5 text-[10px] font-bold tracking-wide text-muted-foreground">편집실 · 현수막 · 배너 · 명함</span>
-          </span>
-        </h1>
-        <div className="reference-document-title">▤ &nbsp; {brief.name || "새 광고물"} &nbsp; ✎</div>
-        <nav className="flex flex-wrap gap-1.5" aria-label="작업 모드">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setMode(m.id)}
-              className={`inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-[12.5px] transition-colors ${
-                mode === m.id
-                  ? m.id === "ai"
-                    ? "border-ai bg-ai font-bold text-ai-foreground"
-                    : "border-primary bg-primary font-bold text-primary-foreground"
-                  : "border-border bg-card font-medium hover:border-primary"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </nav>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button type="button" onClick={() => undo()} className="inline-flex h-7 items-center rounded-md border border-border px-2 text-[11px] font-bold">취소</button>
-          <button type="button" onClick={() => redo()} className="inline-flex h-7 items-center rounded-md border border-border px-2 text-[11px] font-bold">다시</button>
-          <span className="hidden items-center gap-1 text-[11px] font-bold text-safe sm:inline-flex"><span className="size-1.5 rounded-full bg-safe" /> 로컬 설정 저장</span>
-          <button
-            type="button"
-            onClick={() => setHelp((v) => !v)}
-            className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-[11px] font-bold text-muted-foreground"
-            title="단축키"
-          >
-            <HelpCircle className="size-3.5" />
-            <span className="hidden sm:inline">단축키</span>
-          </button>
-          <div className="flex rounded-md border border-border p-0.5" role="group" aria-label="화면 테마">
-            <button
-              type="button"
-              onClick={() => setTheme("light")}
-              className={`inline-flex h-7 items-center gap-1 rounded px-2 text-[11px] font-bold ${
-                theme === "light" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              <Sun className="size-3.5" />
-              밝게
-            </button>
-            <button
-              type="button"
-              onClick={() => setTheme("dark")}
-              className={`inline-flex h-7 items-center gap-1 rounded px-2 text-[11px] font-bold ${
-                theme === "dark" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              <Moon className="size-3.5" />
-              어둡게
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[#f3efe9] text-[#302621]">
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <nav className="hidden w-[68px] shrink-0 flex-col bg-[#292725] py-2 text-[#c9beb5] md:flex" aria-label="편집 도구">
+        <nav className="hidden w-[72px] shrink-0 flex-col bg-[#292725] py-2 text-[#c9beb5] md:flex" aria-label="편집 도구">
+          <Link to="/" className="mx-auto mb-2 flex flex-col items-center text-[8px] font-bold tracking-[0.14em] text-[#e7c48a]">
+            <span className="mb-1 block h-6 w-6 rotate-[30deg] rounded-sm bg-gradient-to-br from-[#e0b063] to-[#5c3a22]" />
+            CRESORA
+          </Link>
           {RAIL.map((item) => {
             const on = railLabel === item.label;
             return (
