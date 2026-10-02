@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { Input, NativeSelect } from "@/components/ui/input";
-import { listOrderMonths, listOrders } from "@/lib/server/api";
-import { dueLabel, formatYearMonth, seoulMonth } from "@/lib/format";
+import { getDashboard, listOrderMonths, listOrders } from "@/lib/server/api";
+import { dueLabel, formatYearMonth, mergeOrderMonths, seoulMonth } from "@/lib/format";
 import { won } from "@/lib/pricing";
 import { ORDER_STATUSES, STATUS_META } from "@/lib/types";
 
@@ -21,7 +21,16 @@ function OrdersPage() {
     queryFn: () => listOrders({ data: { q, status, month } }),
   });
   const monthsQ = useQuery({ queryKey: ["order-months"], queryFn: () => listOrderMonths() });
-  const months = monthsQ.data ?? [seoulMonth()];
+  const boardQ = useQuery({ queryKey: ["dashboard"], queryFn: () => getDashboard() });
+  const months = useMemo(
+    () =>
+      mergeOrderMonths([
+        monthsQ.data?.months ?? [],
+        boardQ.data?.months ?? [],
+        (boardQ.data?.orders ?? []).map((order) => seoulMonth(order.createdAt)),
+      ]),
+    [monthsQ.data, boardQ.data],
+  );
 
   return (
     <div className="space-y-5">

@@ -5,7 +5,7 @@ import { BannerPreview } from "@/components/banner-preview";
 import { StatusBadge } from "@/components/status-badge";
 import { NativeSelect } from "@/components/ui/input";
 import { getDashboard, listOrderMonths } from "@/lib/server/api";
-import { dueLabel, formatClock, formatYearMonth, seoulMonth } from "@/lib/format";
+import { dueLabel, formatClock, formatYearMonth, mergeOrderMonths, seoulMonth } from "@/lib/format";
 import { won } from "@/lib/pricing";
 import { PIPELINE, STATUS_META, type Order, type OrderStatus } from "@/lib/types";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
@@ -42,13 +42,22 @@ function DashboardPage() {
       .reduce((sum, o) => sum + o.supplyAmount, 0);
   }, [data, month]);
 
+  const months = useMemo(
+    () =>
+      mergeOrderMonths([
+        data?.months ?? [],
+        (data?.orders ?? []).map((order) => seoulMonth(order.createdAt)),
+        monthsQ.data?.months ?? [],
+      ]),
+    [data, monthsQ.data],
+  );
+
   if (isPending || !data) {
     return <p className="text-sm text-muted">작업 현황을 불러오는 중…</p>;
   }
 
   const byStatus = (status: OrderStatus) => visible.filter((o) => o.status === status);
   const hold = byStatus("hold");
-  const months = monthsQ.data ?? [current];
 
   return (
     <div className="stagger-in space-y-5">

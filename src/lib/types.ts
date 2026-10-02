@@ -225,6 +225,7 @@ export type DashboardData = {
   monthSupply: number;
   recentMessages: Message[];
   orders: Order[];
+  months: string[];
 };
 
 export function isOrderStatus(value: string): value is OrderStatus {

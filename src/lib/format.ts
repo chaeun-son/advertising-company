@@ -75,6 +75,18 @@ export function seoulMonth(value?: string | Date): string {
   return seoulDate(value ?? new Date()).slice(0, 7);
 }
 
+/** Months that still have orders, newest first, always including this month. */
+export function mergeOrderMonths(groups: readonly (readonly string[])[]): string[] {
+  const months = new Set<string>();
+  for (const group of groups) {
+    for (const month of group) {
+      if (/^\d{4}-\d{2}$/.test(month)) months.add(month);
+    }
+  }
+  months.add(seoulMonth());
+  return [...months].sort().reverse();
+}
+
 export function shiftMonth(ym: string, delta: number): string {
   const [y, m] = ym.split("-").map(Number);
   const dt = new Date(Date.UTC(y || 2026, (m || 1) - 1 + delta, 1));

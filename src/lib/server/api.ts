@@ -4,7 +4,7 @@ import { getSql } from "@/lib/db";
 import { isProgramBrandAsset } from "@/lib/brand";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { chargedUnitPrice, isFlatPiece, lineAmount, specLabel, vatBreakdown } from "@/lib/pricing";
-import { seoulMonth } from "@/lib/format";
+import { seoulMonth, mergeOrderMonths } from "@/lib/format";
 import { ensurePreviousMonthArchive } from "./backup";
 import type {
   CompanyProfile,
@@ -241,7 +241,14 @@ export const getDashboard = createServerFn({ method: "GET" }).middleware([authMi
     )
   ).map(mapMessage);
 
-  const data: DashboardData = { counts, todayDue, monthSupply, recentMessages, orders };
+  const data: DashboardData = {
+    counts,
+    todayDue,
+    monthSupply,
+    recentMessages,
+    orders,
+    months: mergeOrderMonths([orders.map((order) => seoulMonth(order.createdAt))]),
+  };
   return data;
 });
 
@@ -283,12 +290,15 @@ export const listOrders = createServerFn({ method: "GET" }).middleware([authMidd
 
 export const listOrderMonths = createServerFn({ method: "GET" }).middleware([authMiddleware]).handler(async () => {
   const sql = await getSql();
-  const rows = await sql.query<{ created_at: unknown }>(`select created_at from orders`);
-  const months = [...new Set(rows.map((r) => seoulMonth(String(r.created_at))))].filter(Boolean);
-  months.sort().reverse();
-  const current = seoulMonth();
-  if (!months.includes(current)) months.unshift(current);
-  return months;
+  const rows = await sql.query<{ month: string }>(
+    `select to_char(created_at at time zone 'Asia/Seoul', 'YYYY-MM') as month
+       from orders
+      where created_at is not null
+      group by 1
+      order by 1 desc`,
+  );
+  const months = mergeOrderMonths([rows.map((row) => String(row.month ?? ""))]);
+  return { months };
 });
 
 export const getOrder = createServerFn({ method: "GET" }).middleware([authMiddleware])
