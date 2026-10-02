@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyMediaOrder, applyTitlePreset, assignStory, bodyPhotoId, captionKind, directClips, directFilm, filmItemsFromTimeline, filmSummary, fitDurations, holdTargetLength, keepUserOrder, layoutVisualOrder, lengthGapLabel, musicFadeFor, parseFilmLength, pickMotion, pickTransition, splitSeconds, videoDuckSpans, videoPlacementFor, wrapCaption } from "./director.ts";
+import { applyMediaOrder, applyTitlePreset, assignStory, bodyPhotoId, captionKind, directClips, directFilm, filmItemsFromTimeline, filmSummary, fitDurations, holdTargetLength, keepUserOrder, layoutVisualOrder, lengthGapLabel, musicFadeFor, parseFilmLength, pickMotion, pickTransition, pinVisualOrder, splitSeconds, videoDuckSpans, videoPlacementFor, wrapCaption } from "./director.ts";
 import { heardLevel } from "./export-presets.ts";
 import { customerLogo } from "./slideshow.ts";
 import { titleMotionAt } from "./title-paint.ts";
@@ -409,4 +409,36 @@ test("a video the user moved stays beside that photo when other photos are reord
   const parkedBody = parked.filter((clip) => clip.kind === "image" || clip.kind === "video").sort((a, b) => a.start - b.start);
   assert.deepEqual(parkedBody.map((clip) => clip.id), ["a-photo", "b-photo", "c-photo", "v"]);
   assert.equal(videoPlacementFor(parkedBody).get("v")?.videoPlace, "auto");
+});
+
+test("the user can place the ending cut before the video and the length lock keeps that order", () => {
+  const intro = { id: "intro-title", kind: "text", name: "인트로", start: 0, duration: 7, track: 0, title: { role: "intro" as const } };
+  const photo = { id: "p-photo", kind: "image", name: "사진.jpg", start: 7, duration: 20, track: 0 };
+  const video = { id: "v", kind: "video", name: "50.mp4", start: 27, duration: 18, track: 0, videoPlace: "auto" as const };
+  const cut = { id: "end-photo", kind: "image", name: "엔딩컷", start: 45, duration: 7, track: 0, endingCut: true };
+  const ending = { id: "ending-title", kind: "text", name: "엔딩", start: 52, duration: 6, track: 0, title: { role: "ending" as const } };
+  const caption = { id: "end-ending-caption", kind: "text", name: "자막", start: 45, duration: 7, track: 2, text: "함께한 50년" };
+  const swapped = layoutVisualOrder([intro, photo, video, cut, ending, caption], ["p-photo", "end-photo", "v"]);
+  const order = swapped.filter((clip) => clip.kind === "image" || clip.kind === "video").sort((a, b) => a.start - b.start);
+  assert.deepEqual(order.map((clip) => clip.id), ["p-photo", "end-photo", "v"]);
+  assert.equal(swapped.find((clip) => clip.id === "end-ending-caption")?.start, swapped.find((clip) => clip.id === "end-photo")?.start);
+  const flags = videoPlacementFor(order);
+  assert.equal(flags.get("v")?.videoPlace, "manual");
+  assert.equal(flags.get("v")?.videoAfter, "end-photo");
+  const held = holdTargetLength(swapped, 180);
+  const heldOrder = held.filter((clip) => clip.kind === "image" || clip.kind === "video").sort((a, b) => a.start - b.start);
+  assert.deepEqual(heldOrder.map((clip) => clip.id), ["p-photo", "end-photo", "v"]);
+  assert.equal(held.find((clip) => clip.id === "v")?.duration, 18);
+  assert.equal(held.find((clip) => clip.id === "end-photo")?.duration, 7);
+  assert.equal(filmEnd(held), 180);
+  const summary = filmSummary(held);
+  assert.equal(summary.endingCut, 7);
+  assert.equal(Math.round(summary.body * 1000) / 1000, 180 - 7 - 6 - 7);
+});
+
+test("a locked scene stays in its slot when the others are reordered", () => {
+  const pinned = pinVisualOrder(["p", "v", "cut"], ["p", "cut", "v"], new Set(["v"]));
+  assert.deepEqual(pinned, ["p", "v", "cut"]);
+  const moved = pinVisualOrder(["p", "v", "cut"], ["v", "p", "cut"], new Set(["cut"]));
+  assert.deepEqual(moved, ["v", "p", "cut"]);
 });

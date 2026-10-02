@@ -568,16 +568,17 @@ function introOrder<T extends { id: string; start: number }>(a: T, b: T) {
 export function filmSummary(clips: { id?: string; title?: { role?: string }; endingCut?: boolean; start: number; duration: number }[]) {
   const intros = clips.filter((clip) => clip.title?.role === "intro").sort((a, b) => a.start - b.start || (a.id ?? "").localeCompare(b.id ?? ""));
   const ending = clips.find((clip) => clip.title?.role === "ending");
-  const cut = clips.find((clip) => clip.endingCut && clip.duration > 0 && !clip.title);
+  const cuts = clips.filter((clip) => clip.endingCut && clip.duration > 0 && !clip.title);
   const total = clips.reduce((max, clip) => Math.max(max, clip.start + clip.duration), 0);
   const lastIntro = intros.at(-1);
   const bodyStart = lastIntro ? lastIntro.start + lastIntro.duration : 0;
-  const mainEnd = cut ? cut.start : ending ? ending.start : total;
+  const bodyEnd = ending ? ending.start : total;
+  const cutDuration = cuts.reduce((sum, clip) => sum + clip.duration, 0);
   return {
     intro: intros.reduce((sum, clip) => sum + clip.duration, 0),
     ending: ending?.duration ?? 0,
-    endingCut: cut?.duration ?? 0,
-    body: Math.max(0, mainEnd - bodyStart),
+    endingCut: cutDuration,
+    body: Math.max(0, bodyEnd - bodyStart - cutDuration),
     total,
   };
 }
@@ -701,33 +702,75 @@ function isMainVisual(clip: { kind: string; pip?: boolean; title?: unknown; trac
   return (clip.kind === "image" || clip.kind === "video") && !clip.pip && !clip.title && (clip.track ?? 0) === 0;
 }
 
-/** 본편 나열에서 영상이 사진들보다 뒤면 자동, 사진 사이면 사용자가 고정한 위치다. */
+/** 본편 나열에서 영상이 사진·엔딩컷보다 뒤의 자동 자리면 auto, 그 외는 사용자가 둔 자리다. */
 export function videoPlacementFor<T extends { id: string; kind: string; endingCut?: boolean }>(order: readonly T[]) {
-  const body = order.filter((item) => !item.endingCut);
+  const flags = new Map<string, { videoPlace: "auto" | "manual"; videoAfter: string | null }>();
+  const cutAt = order.findIndex((item) => item.endingCut);
+  const head = cutAt >= 0 ? order.slice(0, cutAt) : order;
   let lastPhoto = -1;
-  body.forEach((item, index) => {
+  head.forEach((item, index) => {
     if (item.kind === "image") lastPhoto = index;
   });
-  const flags = new Map<string, { videoPlace: "auto" | "manual"; videoAfter: string | null }>();
-  body.forEach((item, index) => {
-    if (item.kind !== "video") return;
-    if (lastPhoto < 0 || index > lastPhoto) {
+  order.forEach((item, index) => {
+    if (item.kind !== "video" || item.endingCut) return;
+    const beforeCut = cutAt < 0 || index < cutAt;
+    if (beforeCut && (lastPhoto < 0 || index > lastPhoto)) {
       flags.set(item.id, { videoPlace: "auto", videoAfter: null });
       return;
     }
-    const prev = index > 0 ? body[index - 1] : undefined;
+    const prev = index > 0 ? order[index - 1] : undefined;
     flags.set(item.id, {
       videoPlace: "manual",
-      videoAfter: prev ? (prev.kind === "image" ? bodyPhotoId(prev) : prev.id) : null,
+      videoAfter: prev ? (prev.kind === "image" && !prev.endingCut ? bodyPhotoId(prev) : prev.id) : null,
     });
   });
   return flags;
 }
 
+/** 고정한 장면은 원래 칸에 두고, 나머지 순서만 proposed대로 채운다. */
+export function pinVisualOrder(previous: readonly string[], proposed: readonly string[], locked: ReadonlySet<string>): string[] {
+  const unique = (ids: readonly string[]) => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  };
+  const prev = unique(previous);
+  const next = unique(proposed);
+  const lockedIds = new Set(prev.filter((id) => locked.has(id) && next.includes(id)));
+  if (!lockedIds.size) return next;
+  const floating = next.filter((id) => !lockedIds.has(id));
+  const result: string[] = [];
+  let floatIndex = 0;
+  for (let index = 0; index < next.length; index += 1) {
+    const pin = prev[index];
+    if (pin && lockedIds.has(pin) && !result.includes(pin)) {
+      result.push(pin);
+      continue;
+    }
+    const item = floating[floatIndex];
+    if (!item) continue;
+    floatIndex += 1;
+    result.push(item);
+  }
+  for (const id of floating.slice(floatIndex)) {
+    if (!result.includes(id)) result.push(id);
+  }
+  for (const id of next) {
+    if (!result.includes(id)) result.push(id);
+  }
+  return result;
+}
+
 function packChain<T extends OrderedClip>(clips: T[], seq: T[]): T[] {
   const intro = clips.find((clip) => clip.title?.role === "intro");
   const ending = clips.find((clip) => clip.title?.role === "ending");
-  const cut = clips.find((clip) => clip.endingCut && isMainVisual(clip));
+  const cutInSeq = seq.some((clip) => clip.endingCut);
+  const cut = cutInSeq ? undefined : clips.find((clip) => clip.endingCut && isMainVisual(clip));
   const chain = [...(intro ? [intro] : []), ...seq, ...(cut ? [cut] : []), ...(ending ? [ending] : [])];
   let cursor = 0;
   const placed = new Map<string, { start: number; duration: number }>();
@@ -741,8 +784,12 @@ function packChain<T extends OrderedClip>(clips: T[], seq: T[]): T[] {
   const captionParent = new Map<string, string>();
   for (const clip of clips) {
     if (!placed.has(clip.id)) continue;
-    if (clip.kind === "video") captionParent.set(`${clip.id}-caption`, clip.id);
-    if (clip.kind === "image") captionParent.set(`${bodyPhotoId(clip)}-caption`, clip.id);
+    if (clip.kind === "video" || clip.kind === "image") {
+      const base = bodyPhotoId(clip);
+      captionParent.set(`${clip.id}-caption`, clip.id);
+      captionParent.set(`${base}-caption`, clip.id);
+      captionParent.set(`${base}-ending-caption`, clip.id);
+    }
   }
   return clips.map((clip) => {
     const spot = placed.get(clip.id);
@@ -754,9 +801,10 @@ function packChain<T extends OrderedClip>(clips: T[], seq: T[]): T[] {
   });
 }
 
-/** 타임라인에 보일 본편 순서를 그대로 붙인다. 엔딩컷과 타이틀은 그 앞뒤에 둔다. */
+/** 타임라인에 보일 순서를 그대로 붙인다. 목록에 없는 엔딩컷만 맨 뒤로 보낸다. */
 export function layoutVisualOrder<T extends OrderedClip>(clips: T[], visualIds: readonly string[]): T[] {
-  const body = clips.filter((clip) => isMainVisual(clip) && !clip.endingCut);
+  const listed = new Set(visualIds);
+  const body = clips.filter((clip) => isMainVisual(clip) && (!clip.endingCut || listed.has(clip.id)));
   const byId = new Map(body.map((clip) => [clip.id, clip]));
   const seq: T[] = [];
   const seen = new Set<string>();
@@ -826,7 +874,13 @@ type HoldClip = {
   pip?: boolean;
 };
 
-/** 길이 고정. 영상·인트로·엔딩 길이는 두고 본편 사진만 다시 나눠 전체 끝이 목표와 같게 한다. */
+function mainVisualsInOrder<T extends { id: string; start: number }>(visuals: T[], introIds: ReadonlySet<string>, endingId?: string) {
+  return visuals
+    .filter((clip) => !introIds.has(clip.id) && clip.id !== endingId)
+    .sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+}
+
+/** 길이 고정. 영상·인트로·엔딩 길이는 두고 본편 사진만 다시 나눠 전체 끝이 목표와 같게 한다. 사용자가 둔 순서는 유지한다. */
 export function holdTargetLength<T extends HoldClip>(clips: T[], target: number, respectPhotoId?: string): T[] {
   if (!Number.isFinite(target) || target <= 0) return clips;
   const visuals = clips.filter((clip) => (clip.kind === "image" || clip.kind === "video") && !clip.pip && (clip.track ?? 0) === 0);
@@ -852,7 +906,7 @@ export function holdTargetLength<T extends HoldClip>(clips: T[], target: number,
   } else {
     splitSeconds(Math.max(0, photoBudget), photos.map(() => 1)).forEach((seconds, index) => shares.set(photos[index]!.id, seconds));
   }
-  const sequence = [...intros, ...body, ...(cut ? [cut] : []), ...(ending ? [ending] : [])];
+  const sequence = [...intros, ...mainVisualsInOrder(visuals, introIds, ending?.id), ...(ending ? [ending] : [])];
   let cursor = 0;
   const placed = new Map<string, { start: number; duration: number }>();
   for (const clip of sequence) {
