@@ -4,7 +4,7 @@ import { getSql } from "@/lib/db";
 import { isProgramBrandAsset } from "@/lib/brand";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { chargedUnitPrice, isFlatPiece, lineAmount, specLabel, vatBreakdown } from "@/lib/pricing";
-import { seoulMonth, mergeOrderMonths } from "@/lib/format";
+import { mergeOrderMonths, monthFromOrderNo, orderInMonth, seoulMonth } from "@/lib/format";
 import { ensurePreviousMonthArchive } from "./backup";
 import type {
   CompanyProfile,
@@ -247,7 +247,9 @@ export const getDashboard = createServerFn({ method: "GET" }).middleware([authMi
     monthSupply,
     recentMessages,
     orders,
-    months: mergeOrderMonths([orders.map((order) => seoulMonth(order.createdAt))]),
+    months: mergeOrderMonths([
+      orders.flatMap((order) => [seoulMonth(order.createdAt), monthFromOrderNo(order.orderNo) ?? ""]),
+    ]),
   };
   return data;
 });
@@ -285,20 +287,23 @@ export const listOrders = createServerFn({ method: "GET" }).middleware([authMidd
     );
     const mapped = rows.map(mapOrder);
     if (!data.month || data.month === "all") return mapped;
-    return mapped.filter((o) => seoulMonth(o.createdAt) === data.month);
+    return mapped.filter((o) => orderInMonth(o, data.month));
   });
 
 export const listOrderMonths = createServerFn({ method: "GET" }).middleware([authMiddleware]).handler(async () => {
   const sql = await getSql();
-  const rows = await sql.query<{ month: string }>(
-    `select to_char(created_at at time zone 'Asia/Seoul', 'YYYY-MM') as month
-       from orders
-      where created_at is not null
-      group by 1
-      order by 1 desc`,
-  );
-  const months = mergeOrderMonths([rows.map((row) => String(row.month ?? ""))]);
-  return { months };
+  try {
+    const rows = await sql.query<{ month: string | null; order_no: string | null }>(
+      `select to_char(created_at at time zone 'Asia/Seoul', 'YYYY-MM') as month, order_no
+         from orders`,
+    );
+    const months = mergeOrderMonths([
+      rows.flatMap((row) => [String(row.month ?? ""), monthFromOrderNo(row.order_no) ?? ""]),
+    ]);
+    return { months };
+  } catch {
+    return { months: mergeOrderMonths([]) };
+  }
 });
 
 export const getOrder = createServerFn({ method: "GET" }).middleware([authMiddleware])

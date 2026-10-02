@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { getDashboard, listOrderMonths, listOrders } from "@/lib/server/api";
-import { dueLabel, formatYearMonth, mergeOrderMonths, seoulMonth } from "@/lib/format";
+import { dueLabel, formatYearMonth, mergeOrderMonths, monthFromOrderNo, seoulMonth } from "@/lib/format";
 import { won } from "@/lib/pricing";
 import { ORDER_STATUSES, STATUS_META } from "@/lib/types";
 
@@ -27,7 +27,10 @@ function OrdersPage() {
       mergeOrderMonths([
         monthsQ.data?.months ?? [],
         boardQ.data?.months ?? [],
-        (boardQ.data?.orders ?? []).map((order) => seoulMonth(order.createdAt)),
+        (boardQ.data?.orders ?? []).flatMap((order) => [
+          seoulMonth(order.createdAt),
+          monthFromOrderNo(order.orderNo) ?? "",
+        ]),
       ]),
     [monthsQ.data, boardQ.data],
   );

@@ -75,7 +75,25 @@ export function seoulMonth(value?: string | Date): string {
   return seoulDate(value ?? new Date()).slice(0, 7);
 }
 
-/** Months that still have orders, newest first, always including this month. */
+/** O-260917-002 → 2026-09. The printed order number is the shop's month. */
+export function monthFromOrderNo(orderNo: string | null | undefined): string | null {
+  const match = /^O-(\d{2})(\d{2})\d{2}-/i.exec(orderNo ?? "");
+  if (!match) return null;
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  return `${2000 + Number(match[1])}-${String(month).padStart(2, "0")}`;
+}
+
+export function orderInMonth(
+  order: { createdAt?: string; orderNo?: string | null },
+  month: string,
+): boolean {
+  if (!/^\d{4}-\d{2}$/.test(month)) return false;
+  if (order.createdAt && seoulMonth(order.createdAt) === month) return true;
+  return monthFromOrderNo(order.orderNo) === month;
+}
+
+/** Months that still have orders, newest first. This year is always listed through the current month. */
 export function mergeOrderMonths(groups: readonly (readonly string[])[]): string[] {
   const months = new Set<string>();
   for (const group of groups) {
@@ -83,7 +101,16 @@ export function mergeOrderMonths(groups: readonly (readonly string[])[]): string
       if (/^\d{4}-\d{2}$/.test(month)) months.add(month);
     }
   }
-  months.add(seoulMonth());
+  const current = seoulMonth();
+  months.add(current);
+  const [yearText, monthText] = current.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  if (year >= 2000 && month >= 1 && month <= 12) {
+    for (let m = 1; m <= month; m += 1) {
+      months.add(`${year}-${String(m).padStart(2, "0")}`);
+    }
+  }
   return [...months].sort().reverse();
 }
 

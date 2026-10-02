@@ -5,7 +5,7 @@ import { BannerPreview } from "@/components/banner-preview";
 import { StatusBadge } from "@/components/status-badge";
 import { NativeSelect } from "@/components/ui/input";
 import { getDashboard, listOrderMonths } from "@/lib/server/api";
-import { dueLabel, formatClock, formatYearMonth, mergeOrderMonths, seoulMonth } from "@/lib/format";
+import { dueLabel, formatClock, formatYearMonth, mergeOrderMonths, monthFromOrderNo, orderInMonth, seoulMonth } from "@/lib/format";
 import { won } from "@/lib/pricing";
 import { PIPELINE, STATUS_META, type Order, type OrderStatus } from "@/lib/types";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
@@ -28,7 +28,7 @@ function DashboardPage() {
     if (!data) return [];
     if (month === "all") return data.orders;
     return data.orders.filter((o) => {
-      const inMonth = seoulMonth(o.createdAt) === month;
+      const inMonth = orderInMonth(o, month);
       if (month === current) return inMonth || o.status !== "done";
       return inMonth;
     });
@@ -38,7 +38,7 @@ function DashboardPage() {
     const list = data?.orders ?? [];
     const target = month === "all" ? null : month;
     return list
-      .filter((o) => !target || seoulMonth(o.createdAt) === target)
+      .filter((o) => !target || orderInMonth(o, target))
       .reduce((sum, o) => sum + o.supplyAmount, 0);
   }, [data, month]);
 
@@ -46,7 +46,7 @@ function DashboardPage() {
     () =>
       mergeOrderMonths([
         data?.months ?? [],
-        (data?.orders ?? []).map((order) => seoulMonth(order.createdAt)),
+        (data?.orders ?? []).flatMap((order) => [seoulMonth(order.createdAt), monthFromOrderNo(order.orderNo) ?? ""]),
         monthsQ.data?.months ?? [],
       ]),
     [data, monthsQ.data],
