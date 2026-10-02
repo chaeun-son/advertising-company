@@ -559,15 +559,22 @@ export function directFilm(
   return stretchToTarget(film, targetSeconds);
 }
 
-export function filmSummary(clips: { title?: { role?: string }; endingCut?: boolean; start: number; duration: number }[]) {
-  const intro = clips.find((clip) => clip.title?.role === "intro");
+function introOrder<T extends { id: string; start: number }>(a: T, b: T) {
+  if (a.id === "intro-title") return -1;
+  if (b.id === "intro-title") return 1;
+  return a.start - b.start || a.id.localeCompare(b.id);
+}
+
+export function filmSummary(clips: { id?: string; title?: { role?: string }; endingCut?: boolean; start: number; duration: number }[]) {
+  const intros = clips.filter((clip) => clip.title?.role === "intro").sort((a, b) => a.start - b.start || (a.id ?? "").localeCompare(b.id ?? ""));
   const ending = clips.find((clip) => clip.title?.role === "ending");
   const cut = clips.find((clip) => clip.endingCut && clip.duration > 0 && !clip.title);
   const total = clips.reduce((max, clip) => Math.max(max, clip.start + clip.duration), 0);
-  const bodyStart = intro ? intro.start + intro.duration : 0;
+  const lastIntro = intros.at(-1);
+  const bodyStart = lastIntro ? lastIntro.start + lastIntro.duration : 0;
   const mainEnd = cut ? cut.start : ending ? ending.start : total;
   return {
-    intro: intro?.duration ?? 0,
+    intro: intros.reduce((sum, clip) => sum + clip.duration, 0),
     ending: ending?.duration ?? 0,
     endingCut: cut?.duration ?? 0,
     body: Math.max(0, mainEnd - bodyStart),
@@ -823,15 +830,16 @@ type HoldClip = {
 export function holdTargetLength<T extends HoldClip>(clips: T[], target: number, respectPhotoId?: string): T[] {
   if (!Number.isFinite(target) || target <= 0) return clips;
   const visuals = clips.filter((clip) => (clip.kind === "image" || clip.kind === "video") && !clip.pip && (clip.track ?? 0) === 0);
-  const intro = clips.find((clip) => clip.title?.role === "intro");
+  const intros = clips.filter((clip) => clip.title?.role === "intro").sort(introOrder);
   const ending = clips.find((clip) => clip.title?.role === "ending");
   const cut = visuals.find((clip) => clip.endingCut);
+  const introIds = new Set(intros.map((clip) => clip.id));
   const body = visuals
-    .filter((clip) => clip !== cut && clip.id !== intro?.id && clip.id !== ending?.id)
+    .filter((clip) => clip !== cut && !introIds.has(clip.id) && clip.id !== ending?.id)
     .sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
   const videos = body.filter((clip) => clip.kind === "video");
   const photos = body.filter((clip) => clip.kind === "image");
-  const reserved = (intro?.duration ?? 0) + (ending?.duration ?? 0) + (cut?.duration ?? 0) + videos.reduce((sum, clip) => sum + clip.duration, 0);
+  const reserved = intros.reduce((sum, clip) => sum + clip.duration, 0) + (ending?.duration ?? 0) + (cut?.duration ?? 0) + videos.reduce((sum, clip) => sum + clip.duration, 0);
   let photoBudget = target - reserved;
   const shares = new Map<string, number>();
   const pinned = respectPhotoId ? photos.find((clip) => clip.id === respectPhotoId) : undefined;
@@ -844,7 +852,7 @@ export function holdTargetLength<T extends HoldClip>(clips: T[], target: number,
   } else {
     splitSeconds(Math.max(0, photoBudget), photos.map(() => 1)).forEach((seconds, index) => shares.set(photos[index]!.id, seconds));
   }
-  const sequence = [...(intro ? [intro] : []), ...body, ...(cut ? [cut] : []), ...(ending ? [ending] : [])];
+  const sequence = [...intros, ...body, ...(cut ? [cut] : []), ...(ending ? [ending] : [])];
   let cursor = 0;
   const placed = new Map<string, { start: number; duration: number }>();
   for (const clip of sequence) {

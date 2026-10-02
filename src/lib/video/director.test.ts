@@ -313,6 +313,34 @@ test("custom lengths parse and a locked timeline keeps the target when the intro
   assert.equal(Math.round(photoSum * 1000) / 1000, 300 - 10 - 6 - 18);
 });
 
+test("an added intro part stays in front and photos keep the locked length", () => {
+  const film = directFilm(
+    [
+      { kind: "image", id: "a", name: "1.jpg", caption: "하나" },
+      { kind: "image", id: "b", name: "2.jpg", caption: "둘" },
+      { kind: "video", id: "v", name: "현장.mp4", duration: 18 },
+    ],
+    300,
+    "calm",
+    { intro: { seconds: 7 }, ending: { seconds: 6 }, endingCut: false },
+  );
+  const extra = { id: "intro-extra", kind: "text", name: "인트로 2", start: 3, duration: 4, track: 0, title: { role: "intro" as const } };
+  const packed = holdTargetLength([...film, extra], 300);
+  const intros = packed.filter((clip) => clip.title?.role === "intro").sort((a, b) => a.start - b.start);
+  assert.deepEqual(intros.map((clip) => clip.id), ["intro-title", "intro-extra"]);
+  assert.equal(intros[0]?.start, 0);
+  assert.equal(intros[1]?.start, 7);
+  assert.equal(intros[1]?.duration, 4);
+  assert.equal(packed.find((clip) => clip.kind === "video")?.duration, 18);
+  assert.ok((packed.find((clip) => clip.kind === "video")?.start ?? 0) >= 11);
+  assert.equal(filmEnd(packed), 300);
+  const summary = filmSummary(packed);
+  assert.equal(summary.intro, 11);
+  const removed = holdTargetLength(packed.filter((clip) => clip.id !== "intro-extra"), 300);
+  assert.equal(filmEnd(removed), 300);
+  assert.equal(removed.filter((clip) => clip.title?.role === "intro").length, 1);
+});
+
 test("director parks an interleaved 18s video after the photos and before the ending cut", () => {
   const photos = Array.from({ length: 15 }, (_, index) => ({
     kind: "image" as const,

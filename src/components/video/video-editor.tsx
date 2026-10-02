@@ -783,7 +783,8 @@ export function VideoEditor() {
     }
     remember();
     const planned = planSlideshow(photos.map((photo) => ({ ...photo, seconds: 4 })));
-    const next = lengthLock && filmSeconds != null ? holdTargetLength(planned, filmSeconds) : planned;
+    const fitted = lengthLock && filmSeconds != null ? holdTargetLength(planned, filmSeconds) : planned;
+    const next = keepPhotoPlacement(fitted, clipsRef.current);
     setClips(next);
     setSelected(next[0]?.id ?? null);
     setTime(0);
@@ -909,8 +910,11 @@ export function VideoEditor() {
         source: musicPick === "library" ? "user" : "builtin",
       }, bed, false, bed.volume));
     }
+    const manualIntros = introOn ? clipsRef.current.filter((clip) => clip.title?.role === "intro" && clip.id !== "intro-title") : [];
+    let visual = keepPhotoPlacement(planned, clipsRef.current);
+    if (manualIntros.length && filmSeconds != null) visual = holdTargetLength([...visual, ...manualIntros], filmSeconds);
     const audio = [...kept, ...generated];
-    setClips(filmSeconds != null ? trimAudioToTarget([...planned, ...audio], filmSeconds) : [...planned, ...audio]);
+    setClips(filmSeconds != null ? trimAudioToTarget([...visual, ...audio], filmSeconds) : [...visual, ...audio]);
     const introClip = planned.find((clip) => clip.title?.role === "intro");
     const endingClip = planned.find((clip) => clip.title?.role === "ending");
     const cutClip = planned.find((clip) => clip.endingCut);
@@ -928,24 +932,30 @@ export function VideoEditor() {
     toast.success(`전체 ${fmt(summary.total)} · 인트로 ${summary.intro ? fmt(summary.intro) : "없음"} · 본편 ${fmt(summary.body)} · 엔딩컷 ${summary.endingCut ? fmt(summary.endingCut) : "없음"} · 엔딩 타이틀 ${summary.ending ? fmt(summary.ending) : "없음"}. ${orderLabel} ${musicLabel}`);
   }
 
-  function commitTitle(next: TitleCard) {
+  function commitTitle(next: TitleCard, clipId?: string) {
     const safe = { ...next, logo: customerLogo(next.logo) };
-    if (safe.role === "intro") setIntroCard(safe);
-    else setEndingCard(safe);
+    const current = clipsRef.current;
+    const picked = clipId ? current.find((clip) => clip.id === clipId && clip.title?.role === safe.role) : undefined;
+    const existing = picked ?? current.find((clip) => clip.title?.role === safe.role);
+    const first = current.find((clip) => clip.title?.role === safe.role);
+    if (!picked || existing?.id === first?.id) {
+      if (safe.role === "intro") setIntroCard(safe);
+      else setEndingCard(safe);
+    }
     setClips((cur) => {
-      const existing = cur.find((clip) => clip.title?.role === safe.role);
-      if (!existing) return cur;
-      const delta = safe.seconds - existing.duration;
-      const updated = cur.map((clip) => (clip.id === existing.id ? { ...clip, title: safe, text: safe.main, duration: safe.seconds } : clip));
+      const target = cur.find((clip) => clip.id === existing?.id);
+      if (!target) return cur;
+      const delta = safe.seconds - target.duration;
+      const updated = cur.map((clip) => (clip.id === target.id ? { ...clip, title: safe, text: safe.main, duration: safe.seconds } : clip));
       if (!delta) return updated;
       if (lengthLockRef.current && filmSecondsRef.current != null) return holdTargetLength(updated, filmSecondsRef.current);
       return updated.map((clip) => {
-        if (clip.id === existing.id) return clip;
+        if (clip.id === target.id) return clip;
         if (safe.role === "intro") {
           if (clip.kind === "audio" && clip.start < 0.05) return { ...clip, duration: Math.max(0.4, clip.duration + delta) };
-          if (clip.start > 0.02) return { ...clip, start: Math.max(0, clip.start + delta) };
+          if (clip.start > target.start + 0.02) return { ...clip, start: Math.max(0, clip.start + delta) };
         }
-        if (safe.role === "ending" && clip.kind === "audio" && clip.start + clip.duration >= existing.start - 0.2) {
+        if (safe.role === "ending" && clip.kind === "audio" && clip.start + clip.duration >= target.start - 0.2) {
           return { ...clip, duration: Math.max(0.4, clip.duration + delta) };
         }
         return clip;
@@ -954,14 +964,16 @@ export function VideoEditor() {
     requestAnimationFrame(() => draw(timeRef.current));
   }
 
-  async function pickTitleImage(role: "intro" | "ending", slot: "logo" | "bg", file: File) {
+  async function pickTitleImage(role: "intro" | "ending", slot: "logo" | "bg", file: File, clipId?: string) {
     const url = await readableImageUrl(file);
     if (!url) {
       toast.error("이미지를 열 수 없습니다. jpg 또는 png로 올려 주세요.");
       return;
     }
-    const current = role === "intro" ? introCard : endingCard;
-    commitTitle({ ...current, [slot === "logo" ? "logo" : "bgImage"]: url });
+    const current = clipId
+      ? clipsRef.current.find((clip) => clip.id === clipId)?.title ?? (role === "intro" ? introCard : endingCard)
+      : role === "intro" ? introCard : endingCard;
+    commitTitle({ ...current, [slot === "logo" ? "logo" : "bgImage"]: url }, clipId);
   }
 
   function applyPreset(preset: { intro: Partial<TitleCard>; ending: Partial<TitleCard> }) {
@@ -1013,6 +1025,113 @@ export function VideoEditor() {
     setClips((cur) => [...cur, clip]);
     setSelected(clip.id);
     requestAnimationFrame(() => draw(timeRef.current));
+  }
+
+  function addIntro() {
+    remember();
+    setIntroOn(true);
+    const seconds = Math.max(2, introCard.seconds || 7);
+    const id = uid();
+    const count = clipsRef.current.filter((clip) => clip.title?.role === "intro").length;
+    const card: TitleCard = { ...introCard, role: "intro", seconds };
+    const clip: Clip = {
+      id,
+      kind: "text",
+      name: count ? `인트로 ${count + 1}` : "인트로 타이틀",
+      track: 0,
+      start: 0,
+      duration: seconds,
+      offset: 0,
+      text: card.main,
+      color: "#fffdf8",
+      fontSize: 64,
+      x: 0.5,
+      y: 0.5,
+      volume: 0,
+      ...FX,
+      motion: "none",
+      transition: "none",
+      textMotion: "none",
+      textStyle: "year",
+      title: card,
+    };
+    setClips((cur) => {
+      const intros = cur.filter((item) => item.title?.role === "intro");
+      const insertAt = intros.reduce((max, item) => Math.max(max, item.start + item.duration), 0);
+      const placed = { ...clip, start: insertAt };
+      const shifted = cur.map((item) => {
+        const visual = (item.kind === "image" || item.kind === "video" || item.title) && !item.pip && (item.track ?? 0) === 0;
+        const caption = item.kind === "text" && !item.title;
+        if ((visual || caption) && item.start >= insertAt - 0.001) return { ...item, start: item.start + seconds };
+        return item;
+      });
+      const next = [...shifted, placed];
+      if (!lengthLockRef.current || filmSecondsRef.current == null) return next;
+      return holdTargetLength(next, filmSecondsRef.current);
+    });
+    setSelected(id);
+    toast.success(count ? "인트로 부분을 하나 더 넣었습니다." : "인트로를 넣었습니다. 문구는 오른쪽에서 고칩니다.");
+    requestAnimationFrame(() => draw(timeRef.current));
+  }
+
+  function removeIntro(id?: string) {
+    const intros = clipsRef.current.filter((clip) => clip.title?.role === "intro").sort((a, b) => a.start - b.start);
+    const target = intros.find((clip) => clip.id === id) ?? intros.find((clip) => clip.id === selected) ?? intros.at(-1);
+    if (!target) {
+      toast.message("지울 인트로가 없습니다.");
+      return;
+    }
+    remember();
+    const span = target.duration;
+    const cut = target.start;
+    setIntroOn(intros.some((clip) => clip.id !== target.id));
+    setClips((cur) => {
+      const next = cur.filter((clip) => clip.id !== target.id).map((clip) => {
+        const visual = (clip.kind === "image" || clip.kind === "video" || clip.title) && !clip.pip && (clip.track ?? 0) === 0;
+        const caption = clip.kind === "text" && !clip.title;
+        if ((visual || caption) && clip.start >= cut + span - 0.05) return { ...clip, start: Math.max(0, clip.start - span) };
+        return clip;
+      });
+      if (!lengthLockRef.current || filmSecondsRef.current == null) return next;
+      return holdTargetLength(next, filmSecondsRef.current);
+    });
+    setSelected((cur) => (cur === target.id ? null : cur));
+    toast.success("인트로를 뺐습니다.");
+    requestAnimationFrame(() => draw(timeRef.current));
+  }
+
+  function beginPhotoPlace(event: ReactPointerEvent<HTMLCanvasElement>) {
+    const clip = clipsRef.current.find((item) => item.id === selected);
+    if (!clip || clip.pip || clip.title || (clip.kind !== "image" && clip.kind !== "video")) return;
+    const now = timeRef.current;
+    if (now < clip.start - 0.02 || now > clip.start + clip.duration + 0.02) {
+      toast.message("그 사진이 보이는 순간에 화면을 끌어 주세요.");
+      return;
+    }
+    event.preventDefault();
+    pause();
+    remember();
+    const originX = clip.placed ? clip.x : 0.5;
+    const originY = clip.placed ? clip.y : 0.5;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const move = (ev: PointerEvent) => {
+      const dx = (ev.clientX - startX) / Math.max(1, rect.width);
+      const dy = (ev.clientY - startY) / Math.max(1, rect.height);
+      patch(clip.id, {
+        placed: true,
+        x: Math.min(1, Math.max(0, originX + dx)),
+        y: Math.min(1, Math.max(0, originY + dy)),
+        scale: clip.scale ?? 1,
+      }, false);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   }
 
   function addOverlay(file: File | undefined) {
@@ -1453,6 +1572,8 @@ export function VideoEditor() {
         <Tool onClick={undoEdit}><Undo2 className="size-3.5" /> 취소</Tool>
         <Tool onClick={redoEdit}><Redo2 className="size-3.5" /> 다시</Tool>
         <Tool onClick={addText}><Type className="size-3.5" /> 글자</Tool>
+        <Tool onClick={addIntro}>인트로 추가</Tool>
+        <Tool onClick={() => removeIntro()}>인트로 삭제</Tool>
         <Tool onClick={split}><Scissors className="size-3.5" /> 분할</Tool>
         <Tool onClick={() => selected && remove(selected)}><Trash2 className="size-3.5" /> 삭제</Tool>
         <button type="button" onClick={() => (playing ? pause() : play())} className="inline-flex h-8 items-center gap-1 rounded-md bg-white px-3 text-[12px] font-bold text-[#1c150e]">
@@ -1521,7 +1642,7 @@ export function VideoEditor() {
               ? "AI 재배치는 감독에게 맡길 때만 사진 순서를 바꿉니다. 영상은 그 뒤에 붙습니다."
               : photoOrder === "keep"
                 ? "업로드한 순서를 유지합니다. 순서를 옮기려면 직접 정렬을 누르세요."
-                : "핸들을 끌어 사진 순서를 바꿉니다. 영상은 직접 옮기기 전까지 사진 뒤에 있습니다."}
+                : "핸들을 끌어 사진 순서를 바꿉니다. 사진을 고른 뒤 미리보기를 끌면 화면 위치도 바뀝니다."}
           </span>
         </div>
         <div className="flex gap-2 overflow-x-auto">
@@ -1680,7 +1801,7 @@ export function VideoEditor() {
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div className="flex min-w-0 flex-1 items-center justify-center bg-[#100e0c] p-4">
-          <canvas ref={canvasRef} width={1280} height={720} className="max-h-full max-w-full rounded-md bg-black shadow-lg" />
+          <canvas ref={canvasRef} width={1280} height={720} onPointerDown={beginPhotoPlace} className={`max-h-full max-w-full rounded-md bg-black shadow-lg ${selectedClip && !selectedClip.title && !selectedClip.pip && (selectedClip.kind === "image" || selectedClip.kind === "video") ? "cursor-grab" : ""}`} />
         </div>
         <aside className="max-h-72 shrink-0 overflow-y-auto border-t border-white/10 p-3 md:max-h-none md:w-80 md:border-l md:border-t-0">
           <p className="text-[11px] font-bold text-white/50">선택한 클립</p>
@@ -1692,7 +1813,15 @@ export function VideoEditor() {
                 <input type="number" step="0.1" min={0} value={round1(selectedClip.start)} onChange={(e) => patch(selectedClip.id, { start: Number(e.target.value) || 0 })} className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
               </label>
               {selectedClip.title ? (
-                <TitleFields card={selectedClip.title} allowBackgroundImage={selectedClip.title.role === "intro"} onChange={commitTitle} onImage={(slot, file) => void pickTitleImage(selectedClip.title!.role, slot, file)} />
+                <>
+                  <TitleFields card={selectedClip.title} allowBackgroundImage={selectedClip.title.role === "intro"} onChange={(card) => commitTitle(card, selectedClip.id)} onImage={(slot, file) => void pickTitleImage(selectedClip.title!.role, slot, file, selectedClip.id)} />
+                  {selectedClip.title.role === "intro" ? (
+                    <div className="flex gap-1">
+                      <button type="button" onClick={addIntro} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">인트로 추가</button>
+                      <button type="button" onClick={() => removeIntro(selectedClip.id)} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">이 인트로 삭제</button>
+                    </div>
+                  ) : null}
+                </>
               ) : selectedClip.kind === "video" ? (
                 <VideoTrim clip={selectedClip} onChange={(partial) => patch(selectedClip.id, partial)} />
               ) : (
@@ -1700,12 +1829,25 @@ export function VideoEditor() {
                   <input type="number" step="0.1" min={0.2} value={round1(selectedClip.duration)} onChange={(e) => patch(selectedClip.id, { duration: Math.max(0.2, Number(e.target.value) || 0.2) })} className="mt-1 h-8 w-full rounded bg-white/10 px-2" />
                 </label>
               )}
-              {selectedClip.kind === "image" || selectedClip.kind === "video" ? (
+              {(selectedClip.kind === "image" || selectedClip.kind === "video") && !selectedClip.title ? (
                 <>
+                  {!selectedClip.pip ? (
+                    <>
+                      <p className="font-bold text-white/70">화면 배치</p>
+                      <p className="text-[10px] leading-relaxed text-white/45">이 장면이 보일 때 미리보기를 끌어 옮깁니다. 감독에게 맡겨도 끌어 둔 위치는 남고, 순서는 자동으로 다시 맞춥니다.</p>
+                      <label className="block">크기 {((selectedClip.scale ?? 1) * 100).toFixed(0)}%
+                        <input type="range" min={0.6} max={2.2} step={0.02} value={selectedClip.placed ? (selectedClip.scale ?? 1) : 1} onChange={(e) => patch(selectedClip.id, { placed: true, scale: Number(e.target.value), x: selectedClip.placed ? selectedClip.x : 0.5, y: selectedClip.placed ? selectedClip.y : 0.5 })} className="mt-1 w-full" />
+                      </label>
+                      <button type="button" onClick={() => patch(selectedClip.id, { placed: false, scale: 1, x: 0.5, y: 0.5 })} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">자동 위치</button>
+                    </>
+                  ) : null}
                   <p className="font-bold text-white/70">영상 효과</p>
-                  <Chips label="색" value={selectedClip.look ?? "none"} options={LOOKS} onChange={(look) => patch(selectedClip.id, { look, grade: undefined })} />
-                  <Chips label="움직임" value={selectedClip.motion ?? "none"} options={MOTIONS} onChange={(motion) => patch(selectedClip.id, { motion })} />
-                  <Chips label="전환" value={selectedClip.transition ?? "fade"} options={TRANSITIONS} onChange={(transition) => patch(selectedClip.id, { transition, transitionSec: selectedClip.transitionSec ?? 0.6 })} />
+                  <EffectLine label="색" active={(selectedClip.look ?? "none") !== "none"} name={LOOKS.find((item) => item.id === (selectedClip.look ?? "none"))?.label ?? "원본"} onAdd={() => patch(selectedClip.id, { look: "warm", grade: undefined })} onRemove={() => patch(selectedClip.id, { look: "none", grade: undefined })} />
+                  {(selectedClip.look ?? "none") !== "none" ? <Chips label="색 고르기" value={selectedClip.look ?? "none"} options={LOOKS.filter((item) => item.id !== "none")} onChange={(look) => patch(selectedClip.id, { look, grade: undefined })} /> : null}
+                  <EffectLine label="움직임" active={(selectedClip.motion ?? "none") !== "none"} name={MOTIONS.find((item) => item.id === (selectedClip.motion ?? "none"))?.label ?? "고정"} onAdd={() => patch(selectedClip.id, { motion: "slow-zoom" })} onRemove={() => patch(selectedClip.id, { motion: "none" })} />
+                  {(selectedClip.motion ?? "none") !== "none" ? <Chips label="움직임 고르기" value={selectedClip.motion ?? "none"} options={MOTIONS.filter((item) => item.id !== "none")} onChange={(motion) => patch(selectedClip.id, { motion })} /> : null}
+                  <EffectLine label="전환" active={(selectedClip.transition ?? "none") !== "none"} name={TRANSITIONS.find((item) => item.id === (selectedClip.transition ?? "fade"))?.label ?? "없음"} onAdd={() => patch(selectedClip.id, { transition: "fade", transitionSec: selectedClip.transitionSec ?? 0.6 })} onRemove={() => patch(selectedClip.id, { transition: "none" })} />
+                  {(selectedClip.transition ?? "none") !== "none" ? <Chips label="전환 고르기" value={selectedClip.transition ?? "fade"} options={TRANSITIONS.filter((item) => item.id !== "none")} onChange={(transition) => patch(selectedClip.id, { transition, transitionSec: selectedClip.transitionSec ?? 0.6 })} /> : null}
                 </>
               ) : null}
               {selectedClip.kind === "text" && !selectedClip.title ? (
@@ -1883,6 +2025,20 @@ async function readableImageUrl(file: File) {
   }
 }
 
+function keepPhotoPlacement<T extends { id: string; kind: string }>(planned: T[], previous: Clip[]) {
+  const placed = new Map<string, Clip>();
+  for (const clip of previous) {
+    if (clip.kind !== "image" || !clip.placed || clip.pip || clip.endingCut) continue;
+    placed.set(bodyPhotoId(clip), clip);
+  }
+  return planned.map((clip) => {
+    if (clip.kind !== "image") return clip;
+    const prev = placed.get(bodyPhotoId(clip));
+    if (!prev) return clip;
+    return { ...clip, placed: true as const, x: prev.x, y: prev.y, scale: prev.scale ?? 1 };
+  });
+}
+
 function paintPicture(ctx: CanvasRenderingContext2D, source: CanvasImageSource & { videoWidth?: number; videoHeight?: number; naturalWidth?: number; naturalHeight?: number }, w: number, h: number, clip: Clip, local: number, blur = 0) {
   const sw = source.videoWidth || source.naturalWidth || w;
   const sh = source.videoHeight || source.naturalHeight || h;
@@ -1894,7 +2050,9 @@ function paintPicture(ctx: CanvasRenderingContext2D, source: CanvasImageSource &
   const motion = sampleNumber(keys, elapsed, "scale", 1);
   const panX = sampleNumber(keys, elapsed, "x", 0) * w;
   const panY = sampleNumber(keys, elapsed, "y", 0) * h;
-  const userScale = sampleNumber(clip.keyframes, elapsed, "scale", clip.pip ? (clip.scale ?? 0.28) : 1);
+  const manual = Boolean(clip.placed) && !clip.pip;
+  const baseScale = manual ? (clip.scale ?? 1) : 1;
+  const userScale = sampleNumber(clip.keyframes, elapsed, "scale", clip.pip ? (clip.scale ?? 0.28) : baseScale);
   const rot = sampleNumber(clip.keyframes, elapsed, "rotate", clip.rotate ?? 0) * Math.PI / 180;
   const grade = clip.grade ? gradeToFilter(clip.grade) : lookFilter(clip.look ?? "none");
   const filter = [grade === "none" ? "" : grade, blur > 0.2 ? `blur(${blur}px)` : ""].filter(Boolean).join(" ") || "none";
@@ -1920,9 +2078,9 @@ function paintPicture(ctx: CanvasRenderingContext2D, source: CanvasImageSource &
     return;
   }
   const frame = clip.frame ?? "blur";
-  const hasPos = (clip.keyframes ?? []).some((key) => key.x != null || key.y != null);
-  const ux = hasPos ? (sampleNumber(clip.keyframes, elapsed, "x", clip.x) - 0.5) * w : 0;
-  const uy = hasPos ? (sampleNumber(clip.keyframes, elapsed, "y", clip.y) - 0.5) * h : 0;
+  const hasPos = !manual && (clip.keyframes ?? []).some((key) => key.x != null || key.y != null);
+  const ux = manual ? ((clip.x ?? 0.5) - 0.5) * w : hasPos ? (sampleNumber(clip.keyframes, elapsed, "x", clip.x) - 0.5) * w : 0;
+  const uy = manual ? ((clip.y ?? 0.5) - 0.5) * h : hasPos ? (sampleNumber(clip.keyframes, elapsed, "y", clip.y) - 0.5) * h : 0;
   if (frame === "blur") {
     ctx.save();
     ctx.filter = "blur(26px) saturate(1.12) brightness(0.7)";
@@ -2100,6 +2258,22 @@ function wrapMeasured(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
     lines[1] = `${fitted}…`;
   }
   return lines.slice(0, 2);
+}
+
+function EffectLine({ label, active, name, onAdd, onRemove }: { label: string; active: boolean; name: string; onAdd: () => void; onRemove: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-white/70">{label}</span>
+      {active ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#D4A04E] px-2 py-1 text-[11px] font-bold text-[#1c150e]">
+          {name}
+          <button type="button" onClick={onRemove} aria-label={`${label} 삭제`}>삭제</button>
+        </span>
+      ) : (
+        <button type="button" onClick={onAdd} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold">{label} 추가</button>
+      )}
+    </div>
+  );
 }
 
 function Chips<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (id: T) => void }) {
